@@ -87,6 +87,7 @@
         <div class="coach-score"><strong>{{ Math.max(1, Math.ceil(messages.length / 2)) }}</strong><span>当前轮次</span></div>
         <div class="coach-stat"><span>你的回答</span><strong>{{ answerCount }} 次</strong></div>
         <div class="coach-stat"><span>平均字数</span><strong>{{ averageAnswerLength }} 字</strong></div>
+        <div class="coach-stat"><span>回答均分</span><strong>{{ averageScore ? `${averageScore}/10` : '待生成' }}</strong></div>
         <div class="coach-tip"><el-icon><Aim /></el-icon><div><strong>回答建议</strong><p>{{ currentTip }}</p></div></div>
         <div class="coach-steps"><span class="done"></span><span :class="{ active: aiTyping }"></span><span></span><span></span><span></span></div>
         <small class="coach-caption">建议完成 5 轮后结束面试，获得完整评估。</small>
@@ -135,6 +136,8 @@ const connectionLabel = computed(() => ({ idle: '待机', connecting: '连接中
 const answerMessages = computed(() => messages.value.filter(message => message.role === 'user'))
 const answerCount = computed(() => answerMessages.value.length)
 const averageAnswerLength = computed(() => answerCount.value ? Math.round(answerMessages.value.reduce((sum, item) => sum + (item.content || '').length, 0) / answerCount.value) : 0)
+const scoredAnswers = computed(() => answerMessages.value.filter(item => Number.isFinite(item.score)))
+const averageScore = computed(() => scoredAnswers.value.length ? (scoredAnswers.value.reduce((sum, item) => sum + item.score, 0) / scoredAnswers.value.length).toFixed(1) : '')
 const currentTip = computed(() => answerCount.value === 0 ? '先用 STAR 结构介绍一个最有代表性的项目。' : answerCount.value < 3 ? '先说结论，再补充技术细节和你承担的具体职责。' : '尝试量化结果，并主动说明你的取舍和复盘。')
 let abortController = null
 let recognition = null
@@ -234,6 +237,10 @@ const sendMessage = async () => {
       buf += dec.decode(value, { stream: true })
       const parts = buf.split('\n\n'); buf = parts.pop() || ''
       for (const p of parts) {
+        if (p.split('\n').some(line => line.trim() === 'event: error')) {
+          const message = p.split('\n').filter(line => line.startsWith('data:')).map(line => line.slice(5).trim()).join(' ')
+          throw new Error(message || 'AI 响应失败')
+        }
         for (const line of p.split('\n')) {
           if (line.startsWith('data:')) text += line.slice(5).replace(/^ /, '')
         }
@@ -246,6 +253,11 @@ const sendMessage = async () => {
         if (line.startsWith('data:')) text += line.slice(5).replace(/^ /, '')
       }
       messages.value[idx].content = text
+    }
+    const scoreMatch = text.match(/\[评分[：:]*\s*(10|[1-9])\s*\/\s*10\]/)
+    if (scoreMatch) {
+      const userMessage = [...messages.value].reverse().find(message => message.role === 'user')
+      if (userMessage) userMessage.score = Number(scoreMatch[1])
     }
   } catch (e) {
     if (e.name !== 'AbortError') {

@@ -213,7 +213,7 @@ public class InterviewService extends ServiceImpl<InterviewMessageMapper, Interv
         }
 
         // 保存用户消息
-        saveMessage(sessionId, userId, "user", userAnswer, null);
+        InterviewMessage userMessage = saveMessage(sessionId, userId, "user", userAnswer, null);
 
         // 获取历史记录，构建上下文
         List<InterviewMessage> history = getHistory(sessionId, userId);
@@ -240,6 +240,7 @@ public class InterviewService extends ServiceImpl<InterviewMessageMapper, Interv
                 4. 不要输出评分，只需要自然地进行下一个追问
                 5. 每个追问点用 ### 开头作为小标题
                 6. 关键术语用 ` 包裹，保持专业但友好的语气
+                7. 在回复最后单独输出机器标记 [评分:X/10]，X 为对候选人最新回答的 1-10 分整数评分
                 """.formatted(context.toString());
 
         // 流式调用 AI，同时收集 token 用于最后持久化
@@ -258,10 +259,23 @@ public class InterviewService extends ServiceImpl<InterviewMessageMapper, Interv
                         log.warn("AI 流式回复为空，sessionId: {}", sessionId);
                         return;
                     }
+                    Integer score = extractAnswerScore(fullResponse);
+                    if (score != null) {
+                        userMessage.setScore(score);
+                        updateById(userMessage);
+                    }
                     saveMessage(sessionId, userId, "ai", fullResponse, null);
-                    log.info("AI 流式回复已保存，sessionId: {}, 长度: {}", sessionId, fullResponse.length());
+                    log.info("AI 流式回复已保存，sessionId: {}, 长度: {}, score: {}", sessionId, fullResponse.length(), score);
                 })
                 .doOnError(error -> log.error("AI 流式调用失败，sessionId: {}", sessionId, error))
                 .doOnCancel(() -> log.info("AI 流式调用被客户端取消，sessionId: {}", sessionId));
+    }
+
+    private Integer extractAnswerScore(String response) {
+        var matcher = java.util.regex.Pattern.compile("\\[评分[：:]?\\s*(10|[1-9])\\s*/\\s*10]", java.util.regex.Pattern.CASE_INSENSITIVE)
+                .matcher(response);
+        Integer score = null;
+        while (matcher.find()) score = Integer.parseInt(matcher.group(1));
+        return score;
     }
 }

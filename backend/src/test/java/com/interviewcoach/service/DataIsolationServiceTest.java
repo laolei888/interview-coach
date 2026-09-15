@@ -88,4 +88,18 @@ class DataIsolationServiceTest {
 
         verify(sessionMapper).selectList(any());
     }
+
+    @Test
+    void scoreMarkerIsParsedFromAiResponse() {
+        Integer score = ReflectionTestUtils.invokeMethod(interviewService,
+                "extractAnswerScore", "回答点评内容\n[评分:8/10]");
+        assertEquals(8, score);
+    }
+
+    @Test
+    void malformedScoreMarkerIsIgnored() {
+        Integer score = ReflectionTestUtils.invokeMethod(interviewService,
+                "extractAnswerScore", "[评分:12/10]");
+        assertNull(score);
+    }
 }

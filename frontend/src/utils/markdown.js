@@ -9,6 +9,7 @@ export function renderMarkdown(text) {
     // 去评分
     .replace(/\[评分[：:]*\s*\d+\s*\/\s*\d+\]/g, '')
     .replace(/评分[：:]\s*\d+\s*\/\s*\d+/g, '')
+    .replace(/\[评分[：:]*\s*\d+\s*\/\s*\d+\]/g, '')
     .replace(/[-—]{1,3}\s*(你|你的回答|候选人).*$/gm, '')
     .trim()
 
