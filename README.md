@@ -16,6 +16,8 @@
 - 使用 Spring AI 对接 DeepSeek OpenAI 兼容接口，并通过统一 `AiGateway` 实现空响应检测、失败重试、场景标识和调用耗时日志。
 - 使用 Spring WebFlux `Flux` 与前端 Fetch `ReadableStream` 实现 SSE 增量输出和会话消息持久化。
 - 使用 JWT 完成身份认证，所有简历、面试、题目和统计查询均按 `userId` 隔离。
+- 使用 Flyway 管理数据库版本，新环境自动建表，已有环境通过 baseline 平滑接管。
+- 集成 Spring Boot Actuator 与 Micrometer，提供标准健康探针并支持按需开放 Prometheus 指标。
 - Redis 实现 AI 接口限流；Redis 不可用时自动降级为本地内存限流，避免核心功能完全失效。
 - 密码使用 BCrypt 存储，并支持历史 MD5 密码在登录成功后无感升级。
 - 头像资源通过鉴权接口访问，限制文件类型、大小和资源归属，并自动清理旧头像。
@@ -61,7 +63,9 @@ $env:INTERVIEW_DB_PASSWORD="your-mysql-password"
 $env:INTERVIEW_JWT_SECRET="a-long-random-secret"
 ```
 
-初始化数据库：
+数据库由 Flyway 在后端启动时自动初始化和迁移。已有旧版本数据库首次接入时会创建 baseline，不会重复执行初始建表脚本。
+
+需要手动导入演示数据时仍可使用：
 
 ```powershell
 mysql -u root -p < docs/init.sql
@@ -111,6 +115,13 @@ docker compose down
 ```
 
 `docs/init.sql` 仅用于全新数据库初始化，其中包含建表重置语句。已有数据的环境请执行 `docs/20260914_user_data_isolation.sql` 等迁移脚本，不要重复执行初始化脚本。
+
+标准运维端点：
+
+- `GET /actuator/health`：应用健康与容器探针
+- `GET /actuator/info`：应用版本信息
+
+默认不公开指标详情。需要接入 Prometheus 时，将 `INTERVIEW_ACTUATOR_ENDPOINTS` 设置为 `health,info,prometheus,metrics`。
 
 ## 测试与构建
 
