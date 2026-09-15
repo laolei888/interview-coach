@@ -1,0 +1,11 @@
+﻿.idea/
+target/
+node_modules/
+uploads/
+.env
+*.log
+application-local.yml
+.env.*
+!.env.example
+coverage/
+*.pid

@@ -1,0 +1,25 @@
+name: Bug report
+description: 报告可复现的功能问题
+title: "[Bug] "
+labels: [bug]
+body:
+  - type: textarea
+    attributes:
+      label: 问题描述
+      description: 请说明实际行为和预期行为，不要提交密钥或真实简历数据。
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: 复现步骤
+      placeholder: "1. 打开...\n2. 点击...\n3. 出现..."
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: 运行环境
+      placeholder: Windows 11 / Chrome 版本 / JDK 版本
+  - type: textarea
+    attributes:
+      label: 日志或截图
+      description: 请先移除 Token、API Key、个人信息和简历内容。

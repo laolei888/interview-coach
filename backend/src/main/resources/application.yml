@@ -1,0 +1,67 @@
+server:
+  port: 8080
+
+# INTERVIEW_JWT_SECRET should be set in production; local development has a fallback.
+
+app:
+  cors:
+    allowed-origins: ${INTERVIEW_CORS_ORIGINS:http://localhost:5173,http://127.0.0.1:5173}
+  ai:
+    timeout-seconds: ${INTERVIEW_AI_TIMEOUT_SECONDS:45}
+
+spring:
+  # ========== 数据库配置 ==========
+  datasource:
+    url: jdbc:mysql://localhost:3306/interview_coach?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&createDatabaseIfNotExist=true
+    username: root
+    password: ${INTERVIEW_DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  # ========== Redis 配置 ==========
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+  # ========== 文件上传大小限制 ==========
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+  # ========== ⭐ DeepSeek AI 配置 ==========
+  ai:
+    openai:
+      api-key: ${DEEPSEEK_API_KEY}
+      base-url: https://api.deepseek.com
+      chat:
+        options:
+          model: deepseek-chat
+          temperature: 0.7
+          max-tokens: 2048
+
+# ========== MyBatis-Plus 配置 ==========
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      id-type: auto
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+
+# ========== Knife4j 接口文档 ==========
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs
+
+# ========== 日志 ==========
+logging:
+  level:
+    com.interviewcoach: debug
+  pattern:
+    level: "%5p [requestId:%X{requestId:-}]"

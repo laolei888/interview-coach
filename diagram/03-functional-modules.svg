@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 620">
+  <style>
+    text { font-family: 'SimSun','Microsoft YaHei',sans-serif; }
+  </style>
+  <rect width="800" height="620" fill="white"/>
+
+  <text x="400" y="25" fill="black" font-size="16" font-weight="bold" text-anchor="middle">系统功能模块图</text>
+
+  <!-- Root -->
+  <rect x="270" y="45" width="260" height="36" fill="#e8f0fe" stroke="black" stroke-width="2"/>
+  <text x="400" y="68" fill="black" font-size="13" font-weight="bold" text-anchor="middle">AI智能面试辅导平台</text>
+
+  <!-- Root line down -->
+  <line x1="400" y1="81" x2="400" y2="98" stroke="black" stroke-width="1"/>
+  <line x1="60" y1="98" x2="740" y2="98" stroke="black" stroke-width="1"/>
+  <line x1="60" y1="98" x2="60" y2="112" stroke="black" stroke-width="1"/>
+  <line x1="196" y1="98" x2="196" y2="112" stroke="black" stroke-width="1"/>
+  <line x1="332" y1="98" x2="332" y2="112" stroke="black" stroke-width="1"/>
+  <line x1="468" y1="98" x2="468" y2="112" stroke="black" stroke-width="1"/>
+  <line x1="604" y1="98" x2="604" y2="112" stroke="black" stroke-width="1"/>
+  <line x1="740" y1="98" x2="740" y2="112" stroke="black" stroke-width="1"/>
+
+  <!-- Module 1 -->
+  <rect x="5" y="115" width="125" height="30" fill="#e8f0fe" stroke="black" stroke-width="1.2"/>
+  <text x="67" y="135" fill="black" font-size="10" font-weight="bold" text-anchor="middle">用户认证模块</text>
+  <line x1="67" y1="145" x2="67" y2="155" stroke="black" stroke-width="0.6"/>
+  <text x="67" y="170" fill="black" font-size="9" text-anchor="middle">用户注册</text>
+  <text x="67" y="188" fill="black" font-size="9" text-anchor="middle">用户登录(JWT)</text>
+  <text x="67" y="206" fill="black" font-size="9" text-anchor="middle">个人资料管理</text>
+  <text x="67" y="224" fill="black" font-size="9" text-anchor="middle">头像上传</text>
+  <text x="67" y="242" fill="black" font-size="9" text-anchor="middle">密码修改</text>
+
+  <!-- Module 2 -->
+  <rect x="141" y="115" width="125" height="30" fill="#e8ffe8" stroke="black" stroke-width="1.2"/>
+  <text x="203" y="135" fill="black" font-size="10" font-weight="bold" text-anchor="middle">简历分析模块</text>
+  <line x1="203" y1="145" x2="203" y2="155" stroke="black" stroke-width="0.6"/>
+  <text x="203" y="170" fill="black" font-size="9" text-anchor="middle">PDF上传与解析</text>
+  <text x="203" y="188" fill="black" font-size="9" text-anchor="middle">AI多维度评估</text>
+  <text x="203" y="206" fill="black" font-size="9" text-anchor="middle">分析历史记录</text>
+
+  <!-- Module 3 -->
+  <rect x="277" y="115" width="125" height="30" fill="#fff8e8" stroke="black" stroke-width="1.2"/>
+  <text x="339" y="135" fill="black" font-size="10" font-weight="bold" text-anchor="middle">AI模拟面试 ⭐</text>
+  <line x1="339" y1="145" x2="339" y2="155" stroke="black" stroke-width="0.6"/>
+  <text x="339" y="170" fill="black" font-size="9" text-anchor="middle">创建面试会话</text>
+  <text x="339" y="188" fill="black" font-size="9" text-anchor="middle">SSE流式对话</text>
+  <text x="339" y="206" fill="black" font-size="9" text-anchor="middle">生成评估报告</text>
+  <text x="339" y="224" fill="black" font-size="9" text-anchor="middle">语音输入</text>
+  <text x="339" y="242" fill="black" font-size="9" text-anchor="middle">历史面试恢复</text>
+
+  <!-- Module 4 -->
+  <rect x="413" y="115" width="125" height="30" fill="#e8ffe8" stroke="black" stroke-width="1.2"/>
+  <text x="475" y="135" fill="black" font-size="10" font-weight="bold" text-anchor="middle">题库管理模块</text>
+  <line x1="475" y1="145" x2="475" y2="155" stroke="black" stroke-width="0.6"/>
+  <text x="475" y="170" fill="black" font-size="9" text-anchor="middle">分类浏览</text>
+  <text x="475" y="188" fill="black" font-size="9" text-anchor="middle">关键词搜索</text>
+  <text x="475" y="206" fill="black" font-size="9" text-anchor="middle">AI批量出题</text>
+  <text x="475" y="224" fill="black" font-size="9" text-anchor="middle">手动添加</text>
+
+  <!-- Module 5 -->
+  <rect x="549" y="115" width="125" height="30" fill="#f0f0f0" stroke="black" stroke-width="1.2"/>
+  <text x="611" y="135" fill="black" font-size="10" font-weight="bold" text-anchor="middle">历史记录模块</text>
+  <line x1="611" y1="145" x2="611" y2="155" stroke="black" stroke-width="0.6"/>
+  <text x="611" y="170" fill="black" font-size="9" text-anchor="middle">面试会话列表</text>
+  <text x="611" y="188" fill="black" font-size="9" text-anchor="middle">对话详情回放</text>
+  <text x="611" y="206" fill="black" font-size="9" text-anchor="middle">简历分析记录</text>
+
+  <!-- Module 6 -->
+  <rect x="685" y="115" width="100" height="30" fill="#f0f0f0" stroke="black" stroke-width="1.2"/>
+  <text x="735" y="135" fill="black" font-size="10" font-weight="bold" text-anchor="middle">数据统计</text>
+  <line x1="735" y1="145" x2="735" y2="155" stroke="black" stroke-width="0.6"/>
+  <text x="735" y="170" fill="black" font-size="9" text-anchor="middle">数据看板</text>
+  <text x="735" y="188" fill="black" font-size="9" text-anchor="middle">面试次数</text>
+  <text x="735" y="206" fill="black" font-size="9" text-anchor="middle">评分汇总</text>
+
+  <!-- Separator -->
+  <line x1="30" y1="290" x2="770" y2="290" stroke="black" stroke-width="0.5" stroke-dasharray="6,3"/>
+
+  <!-- Bottom: shared services -->
+  <text x="400" y="315" fill="black" font-size="12" font-weight="bold" text-anchor="middle">公共基础服务</text>
+
+  <rect x="30" y="330" width="145" height="30" fill="#fffff0" stroke="black" stroke-width="0.8"/>
+  <text x="102" y="349" fill="black" font-size="10" text-anchor="middle">JWT Token认证</text>
+
+  <rect x="190" y="330" width="145" height="30" fill="#fffff0" stroke="black" stroke-width="0.8"/>
+  <text x="262" y="349" fill="black" font-size="10" text-anchor="middle">Redis限流</text>
+
+  <rect x="350" y="330" width="145" height="30" fill="#fffff0" stroke="black" stroke-width="0.8"/>
+  <text x="422" y="349" fill="black" font-size="10" text-anchor="middle">DeepSeek AI调用</text>
+
+  <rect x="510" y="330" width="145" height="30" fill="#fffff0" stroke="black" stroke-width="0.8"/>
+  <text x="582" y="349" fill="black" font-size="10" text-anchor="middle">Markdown渲染</text>
+
+  <rect x="670" y="330" width="100" height="30" fill="#fffff0" stroke="black" stroke-width="0.8"/>
+  <text x="720" y="349" fill="black" font-size="10" text-anchor="middle">全局异常处理</text>
+
+  <!-- Note -->
+  <text x="400" y="400" fill="#555" font-size="10" text-anchor="middle">注: 各模块通过 Axios (REST) 和 Fetch (SSE) 与后端 Spring Boot API 通信</text>
+</svg>
