@@ -57,16 +57,29 @@
       </section>
     </template>
 
-    <section v-else class="guest-hero">
-      <span class="eyebrow">AI Interview Coach</span><h1>用可复盘的训练，准备下一场技术面试</h1><p>简历诊断、实时模拟面试、结构化能力评估和私人题库，集中在一个训练工作台。</p><div><el-button type="primary" size="large" @click="router.push('/login')">开始训练</el-button><el-button size="large" @click="router.push('/login')">登录</el-button></div>
-    </section>
+    <template v-else>
+      <section class="guest-hero">
+        <div class="hero-content">
+          <span class="eyebrow">面向技术岗位的 AI 求职训练平台</span>
+          <h1>把每次准备，变成看得见的进步</h1>
+          <p>岗位定向简历诊断、实时模拟面试与逐题复盘，帮你从“刷过题”走到“讲得清”。</p>
+          <div class="hero-actions"><el-button type="primary" size="large" @click="router.push('/login')">开始训练<el-icon><ArrowRight /></el-icon></el-button><button type="button" @click="scrollToCapabilities">查看能力</button></div>
+          <div class="trust-row"><span><el-icon><CircleCheck /></el-icon> 数据按用户隔离</span><span><el-icon><CircleCheck /></el-icon> 报告可导出</span><span><el-icon><CircleCheck /></el-icon> 支持手机端</span></div>
+        </div>
+      </section>
+      <section id="capabilities" class="capability-band">
+        <div><span>01</span><h2>岗位定向诊断</h2><p>结合目标岗位与 JD，检查 ATS 关键词、能力缺口和项目证据。</p></div>
+        <div><span>02</span><h2>真实对话训练</h2><p>保留完整面试上下文，每道回答即时评分并继续追问。</p></div>
+        <div><span>03</span><h2>结构化复盘</h2><p>从表现趋势到逐题记录，把模糊感受转成下一步行动。</p></div>
+      </section>
+    </template>
   </main>
 </template>
 
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ArrowRight, ChatDotRound, ChatLineRound, Collection, DocumentChecked, VideoPlay } from '@element-plus/icons-vue'
+import { ArrowRight, ChatDotRound, ChatLineRound, CircleCheck, Collection, DocumentChecked, VideoPlay } from '@element-plus/icons-vue'
 import api, { getSessions } from '../api'
 import { useUserStore } from '../stores/user'
 
@@ -96,6 +109,7 @@ onMounted(async () => {
 const openSession = item => item.status === 'completed' ? router.push('/history') : router.push({ path: '/interview', query: { sessionId: item.id } })
 const distributionWidth = count => `${Math.max(8, count / Math.max(1, ...stats.positionDistribution.map(item => item.count)) * 100)}%`
 const formatDate = value => value ? new Date(value).toLocaleString('zh-CN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''
+const scrollToCapabilities = () => document.querySelector('#capabilities')?.scrollIntoView({ behavior: 'smooth' })
 </script>
 
 <style scoped>
@@ -114,7 +128,13 @@ const formatDate = value => value ? new Date(value).toLocaleString('zh-CN', { mo
 .plan-list button, .recent-list button { width: 100%; display: flex; align-items: center; gap: 12px; padding: 15px 18px; border: 0; border-bottom: 1px solid var(--border); background: transparent; color: var(--text); text-align: left; cursor: pointer; }.plan-list button:last-child, .recent-list button:last-child { border-bottom: 0; }.plan-list button:hover, .recent-list button:hover { background: var(--hover); }.plan-list button > span:nth-child(2), .recent-main { min-width: 0; flex: 1; }.plan-list strong, .plan-list small, .recent-main strong, .recent-main small { display: block; }.plan-list strong, .recent-main strong { font-size: 13px; }.plan-list small, .recent-main small { margin-top: 4px; color: var(--text-muted); font-size: 11px; }
 .plan-icon, .recent-icon { width: 36px; height: 36px; display: grid; flex: 0 0 36px; place-items: center; border-radius: 7px; }.plan-icon.blue { color: #1677ff; background: #eaf3ff; }.plan-icon.green { color: #289b62; background: #e9f7ef; }.plan-icon.amber { color: #c78517; background: #fff4df; }.recent-icon { color: var(--text-secondary); background: var(--hover); }.row-arrow { color: var(--text-muted); }
 .distribution-list { padding: 16px 20px 20px; }.distribution-list > div { margin-bottom: 15px; }.distribution-list > div:last-child { margin-bottom: 0; }.distribution-list > div > div:first-child { display: flex; justify-content: space-between; margin-bottom: 7px; font-size: 12px; }.distribution-list strong { color: var(--text-muted); }.bar { height: 6px; overflow: hidden; border-radius: 3px; background: var(--hover); }.bar i { display: block; height: 100%; border-radius: inherit; background: #36a269; }.empty-line { min-height: 155px; display: grid; place-items: center; color: var(--text-muted); font-size: 12px; }
-.guest-hero { max-width: 850px; margin: 0 auto; padding: 110px 20px; text-align: center; }.guest-hero h1 { margin-bottom: 18px; font-size: 44px; line-height: 1.2; }.guest-hero p { margin-bottom: 28px; color: var(--text-secondary); font-size: 17px; line-height: 1.7; }
+.guest-hero { min-height: min(720px, calc(100vh - 56px)); display: flex; align-items: center; max-width: 100%; margin: 0; padding: 70px max(42px, calc((100vw - 1180px) / 2)) 96px; position: relative; isolation: isolate; background: #eef2f2 url('https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=1800&q=88') right center/cover no-repeat; background-blend-mode: screen; }
+.guest-hero::after { content: ''; position: absolute; inset: 0 42% 0 0; z-index: -1; background: rgba(244,246,248,.92); }
+:global(html.dark) .guest-hero { background-color: #111716; background-blend-mode: multiply; }
+:global(html.dark) .guest-hero::after { background: rgba(17,23,22,.9); }
+.hero-content { max-width: 650px; }.hero-content h1 { max-width: 620px; margin: 12px 0 20px; font-size: clamp(42px, 5vw, 68px); line-height: 1.06; font-weight: 800; }.hero-content > p { max-width: 590px; color: var(--text-secondary); font-size: 17px; line-height: 1.8; }.hero-actions { display: flex; align-items: center; gap: 18px; margin: 30px 0 24px; }.hero-actions > button:not(.el-button) { border: 0; background: transparent; color: var(--text-secondary); font: inherit; font-size: 14px; cursor: pointer; }.trust-row { display: flex; flex-wrap: wrap; gap: 18px; color: var(--text-muted); font-size: 12px; }.trust-row span { display: flex; align-items: center; gap: 5px; }.trust-row .el-icon { color: var(--success); }
+.capability-band { display: grid; grid-template-columns: repeat(3,1fr); max-width: 1180px; margin: 0 auto 60px; border-top: 1px solid var(--border); }.capability-band > div { padding: 30px 32px; border-right: 1px solid var(--border); }.capability-band > div:last-child { border: 0; }.capability-band span { color: var(--accent); font-size: 11px; font-weight: 800; }.capability-band h2 { margin: 10px 0 8px; font-size: 17px; }.capability-band p { color: var(--text-muted); font-size: 12px; line-height: 1.7; }
 @media (max-width: 900px) { .overview-grid { grid-template-columns: repeat(2, 1fr); }.overview-grid > div:nth-child(2) { border-right: 0; }.overview-grid > div:nth-child(-n+2) { border-bottom: 1px solid var(--border); }.main-grid, .lower-grid { grid-template-columns: 1fr; } }
-@media (max-width: 600px) { .dashboard { width: 100%; padding: 0 2px; }.dashboard-head { align-items: flex-start; flex-direction: column; }.dashboard-head h1 { font-size: 25px; }.overview-grid > div { padding: 16px 14px; }.overview-grid strong { font-size: 23px; }.chart-wrap { padding: 8px 4px; overflow-x: auto; }.chart-wrap svg { min-width: 620px; }.chart-labels { min-width: 620px; }.guest-hero { padding: 60px 8px; text-align: left; }.guest-hero h1 { font-size: 30px; }.guest-hero p { font-size: 15px; } }
+@media (max-width: 820px) { .guest-hero { min-height: auto; padding: 58px 22px 54px; background-position: 62% center; }.guest-hero::after { inset: 0; background: rgba(244,246,248,.82); }:global(html.dark) .guest-hero::after { background: rgba(17,23,22,.84); }.hero-content h1 { font-size: 43px; }.capability-band { grid-template-columns: 1fr; margin: 0 22px 42px; }.capability-band > div { padding: 24px 0; border-right: 0; border-bottom: 1px solid var(--border); } }
+@media (max-width: 600px) { .dashboard { width: 100%; padding: 0 2px; }.dashboard-head { align-items: flex-start; flex-direction: column; }.dashboard-head h1 { font-size: 25px; }.overview-grid > div { padding: 16px 14px; }.overview-grid strong { font-size: 23px; }.chart-wrap { padding: 8px 4px; overflow-x: auto; }.chart-wrap svg { min-width: 620px; }.chart-labels { min-width: 620px; }.guest-hero { padding: 42px 16px 46px; }.hero-content h1 { font-size: 36px; }.hero-content > p { font-size: 15px; }.trust-row { gap: 10px 14px; }.capability-band { margin-inline: 16px; } }
 </style>

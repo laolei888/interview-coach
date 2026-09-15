@@ -36,7 +36,7 @@
 
         <div class="sb-bottom">
           <div class="sb-bottom-item" @click="themeStore.toggle()">
-            <span>{{ themeStore.dark ? '☀️' : '🌙' }}</span>
+            <el-icon><Sunny v-if="themeStore.dark" /><Moon v-else /></el-icon>
             <span v-if="!sidebarCollapsed">{{ themeStore.dark ? '亮色模式' : '深色模式' }}</span>
           </div>
           <div class="sb-bottom-item" @click="sidebarCollapsed = !sidebarCollapsed">
@@ -77,10 +77,10 @@
     <div v-else class="full-layout">
       <header class="topbar">
         <div class="top-left" @click="$router.push('/')">
-          <span>🎯</span><span class="logo">AI Interview Coach</span>
+          <span class="brand-mark"><el-icon><Aim /></el-icon></span><span class="logo">Interview Coach</span>
         </div>
         <nav class="top-right">
-          <span class="theme-toggle" @click="themeStore.toggle()">{{ themeStore.dark ? '☀️' : '🌙' }}</span>
+          <button class="theme-toggle" type="button" :title="themeStore.dark ? '亮色模式' : '深色模式'" @click="themeStore.toggle()"><el-icon><Sunny v-if="themeStore.dark" /><Moon v-else /></el-icon></button>
           <template v-if="userStore.isLoggedIn()">
             <el-popover placement="bottom-end" :width="180" trigger="hover" :show-after="200">
               <template #reference>
@@ -157,20 +157,21 @@ const handleLogout = () => { userStore.logout(); router.push('/') }
 <style>
 /* ======== 全局 ======== */
 :root {
-  --bg: #f5f7fa; --bg-card: #fff; --bg-input: #fff;
-  --text: #2c3e50; --text-secondary: #666; --text-muted: #999;
-  --border: #e8eaed; --shadow: 0 2px 8px rgba(0,0,0,.04);
+  --bg: #f4f6f8; --bg-card: #fff; --bg-input: #fff;
+  --text: #17202a; --text-secondary: #53606d; --text-muted: #84909c;
+  --border: #e2e7eb; --shadow: 0 10px 30px rgba(23,32,42,.07);
   --nav-bg: rgba(255,255,255,.85); --chat-ai: #f5f7fa;
-  --hover: #f0f2f5; --blue: #409EFF; --blue-light: #ecf5ff;
+  --hover: #f0f3f5; --blue: #167d76; --blue-light: #e8f5f3;
+  --accent: #df694f; --success: #23845c;
   --sidebar-bg: #fff;
 }
 html.dark {
-  --bg: #0f0f1a; --bg-card: #1a1a2e; --bg-input: #252540;
-  --text: #e0e0e0; --text-secondary: #b0b0b0; --text-muted: #777;
-  --border: #2a2a40; --shadow: 0 2px 12px rgba(0,0,0,.3);
-  --nav-bg: rgba(15,15,26,.92); --chat-ai: #222240;
-  --hover: #252540; --blue: #6db3ff; --blue-light: #1a2a40;
-  --sidebar-bg: #1a1a2e;
+  --bg: #111716; --bg-card: #18201f; --bg-input: #202927;
+  --text: #eef3f2; --text-secondary: #b5c0be; --text-muted: #7f908d;
+  --border: #2b3735; --shadow: 0 12px 34px rgba(0,0,0,.3);
+  --nav-bg: rgba(17,23,22,.92); --chat-ai: #202927;
+  --hover: #222d2b; --blue: #5fc1b6; --blue-light: #193532;
+  --accent: #f08b73; --success: #58b98b; --sidebar-bg: #18201f;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -192,12 +193,14 @@ body {
   position: sticky; top: 0; z-index: 99;
 }
 .top-left { display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 18px; font-weight: 700; color: var(--text); user-select: none; }
+.brand-mark { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 7px; background: var(--blue); color: #fff; }
 .top-right { display: flex; align-items: center; gap: 12px; }
-.theme-toggle { cursor: pointer; font-size: 18px; user-select: none; padding: 4px 8px; }
+.theme-toggle { width: 32px; height: 32px; display: grid; place-items: center; border: 0; border-radius: 6px; background: transparent; color: var(--text-secondary); cursor: pointer; font-size: 17px; }
+.theme-toggle:hover { background: var(--hover); }
 .user-chip { display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 4px 10px; border-radius: 8px; font-size: 14px; color: var(--text-secondary); }
 .user-chip:hover { background: var(--hover); }
 .chip-avatar { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; }
-.login-link { color: var(--blue); text-decoration: none; font-weight: 500; font-size: 14px; }
+.login-link { padding: 8px 15px; border-radius: 6px; background: var(--text); color: var(--bg-card); text-decoration: none; font-weight: 600; font-size: 13px; }
 .pop-row { padding: 6px 4px; font-size: 14px; color: var(--text); }
 .pop-row.clickable { cursor: pointer; border-radius: 6px; padding: 8px; }
 .pop-row.clickable:hover { background: var(--hover); }
