@@ -39,6 +39,8 @@ public class ResumeController {
      */
     @PostMapping("/analyze")
     public Result<ResumeAnalysis> analyze(@RequestParam("file") MultipartFile file,
+                                          @RequestParam(value = "targetPosition", required = false) String targetPosition,
+                                          @RequestParam(value = "jobDescription", required = false) String jobDescription,
                                           HttpServletRequest request) {
         // 限流：每分钟最多 5 次
         Long userId = (Long) request.getAttribute("userId");
@@ -52,6 +54,8 @@ public class ResumeController {
         if (!file.getOriginalFilename().toLowerCase().endsWith(".pdf")) {
             return Result.badRequest("仅支持 PDF 格式简历");
         }
+        targetPosition = normalize(targetPosition, 100);
+        jobDescription = normalize(jobDescription, 6000);
 
         log.info("收到简历文件: {}, 大小: {}KB", file.getOriginalFilename(), file.getSize() / 1024);
 
@@ -60,8 +64,13 @@ public class ResumeController {
 
         // 3. 构建 AI Prompt
         String prompt = """
-                你是一位资深 HR 和技术面试官，有 10 年招聘经验。
-                请仔细分析以下简历，给出专业的评估：
+                你是一位资深技术招聘负责人和 ATS 简历优化顾问。请基于简历事实进行岗位定向诊断，
+                不要虚构候选人的经历、数据或技术栈。目标岗位和 JD 未提供时，按简历内容推断最匹配方向。
+
+                ===目标岗位===
+                %s
+                ===岗位 JD===
+                %s
 
                 ===简历内容开始===
                 %s
@@ -69,28 +78,33 @@ public class ResumeController {
 
                 输出格式（严格按此结构，不要用数字序号）：
                 ## 综合评分：XX分
-                评分理由
+                用 2-3 句话概括岗位匹配结论和最关键的改进方向。
+
+                ## 岗位匹配度
+                - 核心要求覆盖：说明已覆盖的技能和经历
+                - 关键缺口：说明 JD 要求但简历缺少证据的部分
+                - ATS 关键词：列出建议自然补充的关键词，不得建议虚构
 
                 ## 亮点
-                - 亮点1
-                - 亮点2
-                - 亮点3
+                - 列出 3 条有事实依据、对目标岗位有效的亮点
 
-                ## 不足
-                - 不足1
-                - 不足2
-                - 不足3
+                ## 风险与不足
+                - 列出 3 条会影响筛选或面试判断的问题
 
-                ## 优化建议
-                - 建议1
-                - 建议2
-                - 建议3
-                - 建议4
+                ## 项目经历改写建议
+                - 给出 2-4 条可直接用于改写的建议，优先使用“行动 + 技术 + 结果”结构
+
+                ## 优先行动清单
+                - P0：本次投递前必须修改的事项
+                - P1：可进一步增强说服力的事项
 
                 ## 推荐岗位
-                - 岗位1
-                - 岗位2
-                """.formatted(resumeText);
+                - 推荐 2-3 个匹配方向，并简述理由
+                """.formatted(
+                targetPosition == null ? "未指定" : targetPosition,
+                jobDescription == null ? "未提供" : jobDescription,
+                resumeText
+        );
 
         // 4. 调用 DeepSeek AI
         String aiResult = aiGateway.complete("resume-analysis", prompt);
@@ -101,11 +115,19 @@ public class ResumeController {
         ResumeAnalysis analysis = resumeService.saveAnalysis(
                 userId,
                 file.getOriginalFilename(),
+                targetPosition,
+                jobDescription,
                 resumeText,
                 aiResult
         );
 
         return Result.ok(analysis);
+    }
+
+    private String normalize(String value, int maxLength) {
+        if (value == null || value.isBlank()) return null;
+        String normalized = value.trim();
+        return normalized.length() > maxLength ? normalized.substring(0, maxLength) : normalized;
     }
 
     /**

@@ -9,6 +9,8 @@
       <aside class="control-panel">
         <section class="upload-section">
           <div class="section-head"><h2>新分析</h2><span>PDF · 最大 10MB</span></div>
+          <el-input v-model="targetPosition" maxlength="100" placeholder="目标岗位，如 Java 后端开发" class="target-input" />
+          <el-input v-model="jobDescription" type="textarea" :rows="4" maxlength="6000" show-word-limit resize="vertical" placeholder="粘贴岗位 JD，AI 将分析关键词覆盖和能力缺口（可选）" class="jd-input" />
           <el-upload ref="uploadRef" drag :auto-upload="false" :on-change="handleFileChange" :on-exceed="handleFileExceed" :limit="1" accept=".pdf" :disabled="analyzing">
             <div class="drop-content"><el-icon><UploadFilled /></el-icon><strong>{{ selectedFile ? selectedFile.name : '选择或拖入简历' }}</strong><small>{{ selectedFile ? formatSize(selectedFile.size) : '仅上传 PDF 文件' }}</small></div>
           </el-upload>
@@ -37,7 +39,7 @@
         <template v-else-if="activeReport">
           <header class="report-head">
             <div class="score-block"><strong>{{ activeReport.aiScore ?? '--' }}</strong><span>综合评分</span></div>
-            <div class="report-title"><span>{{ formatDate(activeReport.createdAt, true) }}</span><h2>{{ activeReport.fileName }}</h2><p v-if="activeReport.matchPosition">{{ activeReport.matchPosition }}</p></div>
+            <div class="report-title"><span>{{ formatDate(activeReport.createdAt, true) }}</span><h2>{{ activeReport.fileName }}</h2><p>{{ activeReport.targetPosition || activeReport.matchPosition || '通用岗位分析' }}</p></div>
             <el-dropdown trigger="click">
               <el-button text circle aria-label="报告操作"><el-icon><MoreFilled /></el-icon></el-button>
               <template #dropdown><el-dropdown-menu><el-dropdown-item @click="downloadReport">下载 Markdown</el-dropdown-item><el-dropdown-item divided class="danger-item" @click="deleteReport">删除报告</el-dropdown-item></el-dropdown-menu></template>
@@ -61,6 +63,8 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 
 const uploadRef = ref(null)
 const selectedFile = ref(null)
+const targetPosition = ref('')
+const jobDescription = ref('')
 const analyzing = ref(false)
 const historyLoading = ref(false)
 const reports = ref([])
@@ -95,11 +99,12 @@ const startAnalyze = async () => {
   if (!selectedFile.value) return
   analyzing.value = true
   try {
-    const res = await analyzeResume(selectedFile.value)
+    const res = await analyzeResume(selectedFile.value, { targetPosition: targetPosition.value.trim(), jobDescription: jobDescription.value.trim() })
     if (res.data.code !== 200) throw new Error(res.data.message || '分析失败')
     activeReport.value = res.data.data
     reports.value = [res.data.data, ...reports.value.filter(item => item.id !== res.data.data.id)]
     selectedFile.value = null
+    jobDescription.value = ''
     uploadRef.value?.clearFiles()
     ElMessage.success('分析完成')
   } catch (err) { ElMessage.error(err.response?.data?.message || err.message || '分析失败，请稍后重试') }
@@ -143,6 +148,8 @@ const formatDate = (value, withTime = false) => value ? new Date(value).toLocale
 .section-head h2 { color: var(--text); font-size: 14px; }
 .section-head span { color: var(--text-muted); font-size: 11px; }
 .upload-section :deep(.el-upload), .upload-section :deep(.el-upload-dragger) { width: 100%; }
+.target-input { margin-bottom: 10px; }
+.jd-input { margin-bottom: 10px; }
 .upload-section :deep(.el-upload-dragger) { padding: 0; border-radius: 7px; background: var(--bg); border-color: var(--border); }
 .drop-content { min-height: 132px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; padding: 18px; }
 .drop-content .el-icon { font-size: 28px; color: var(--blue); }

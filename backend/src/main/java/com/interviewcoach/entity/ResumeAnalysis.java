@@ -23,6 +23,12 @@ public class ResumeAnalysis {
     /** 原始文件名 */
     private String fileName;
 
+    /** 本次分析对应的目标岗位 */
+    private String targetPosition;
+
+    /** 用户提供的目标岗位描述 */
+    private String jobDescription;
+
     /** PDF 解析出的纯文本 */
     private String content;
 

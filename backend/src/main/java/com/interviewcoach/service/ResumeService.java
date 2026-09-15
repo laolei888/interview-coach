@@ -42,10 +42,13 @@ public class ResumeService extends ServiceImpl<ResumeAnalysisMapper, ResumeAnaly
     /**
      * 保存简历分析记录
      */
-    public ResumeAnalysis saveAnalysis(Long userId, String fileName, String content, String aiFeedback) {
+    public ResumeAnalysis saveAnalysis(Long userId, String fileName, String targetPosition,
+                                       String jobDescription, String content, String aiFeedback) {
         ResumeAnalysis analysis = new ResumeAnalysis();
         analysis.setUserId(userId);
         analysis.setFileName(fileName);
+        analysis.setTargetPosition(targetPosition);
+        analysis.setJobDescription(jobDescription);
         analysis.setContent(content);
         analysis.setAiFeedback(aiFeedback);
         analysis.setMatchPosition(extractMatchPosition(aiFeedback));

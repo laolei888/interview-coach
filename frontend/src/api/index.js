@@ -34,9 +34,11 @@ export const getUserInfo = () => api.get('/user/me')
 export const healthCheck = () => api.get('/health')
 
 // ==================== 简历分析 ====================
-export const analyzeResume = (file) => {
+export const analyzeResume = (file, context = {}) => {
   const formData = new FormData()
   formData.append('file', file)
+  if (context.targetPosition) formData.append('targetPosition', context.targetPosition)
+  if (context.jobDescription) formData.append('jobDescription', context.jobDescription)
   return api.post('/resume/analyze', formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
   })
