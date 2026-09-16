@@ -102,4 +102,11 @@ class DataIsolationServiceTest {
                 "extractAnswerScore", "[评分:12/10]");
         assertNull(score);
     }
+
+    @Test
+    void fullWidthScoreMarkerIsParsed() {
+        Integer score = ReflectionTestUtils.invokeMethod(interviewService,
+                "extractAnswerScore", "简短点评：回答有具体数据。\n【评分：9/10】");
+        assertEquals(9, score);
+    }
 }

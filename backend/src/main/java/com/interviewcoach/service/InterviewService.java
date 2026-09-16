@@ -148,6 +148,7 @@ public class InterviewService extends ServiceImpl<InterviewMessageMapper, Interv
                 你是资深 %s 面试官，正在进行一场真实的技术面试。
                 请直接提出第一个面试问题，不需要打招呼和自我介绍。
                 问题要有一定深度，考察候选人的实际能力。
+                只输出一个自然段，不使用 Markdown 标题、列表、引用或代码块。
                 """.formatted(position);
 
         return aiGateway.complete("interview-first-question", prompt);
@@ -234,13 +235,12 @@ public class InterviewService extends ServiceImpl<InterviewMessageMapper, Interv
                 %s
 
                 规则：
-                1. 根据候选人的最新回答进行追问或点评
-                2. 如果回答很精彩，追问更深层次的问题
-                3. 如果回答肤浅，要求对方展开说明
-                4. 不要输出评分，只需要自然地进行下一个追问
-                5. 每个追问点用 ### 开头作为小标题
-                6. 关键术语用 ` 包裹，保持专业但友好的语气
-                7. 在回复最后单独输出机器标记 [评分:X/10]，X 为对候选人最新回答的 1-10 分整数评分
+                1. 回复固定为两部分：“简短点评：”和“下一问：”，每部分只写一个自然段
+                2. 简短点评控制在 1-2 句话，指出最新回答中最具体的一项优点或缺口
+                3. 下一问只提出一个问题；回答充分时深入追问，回答模糊时要求补充事实或数据
+                4. 不使用 Markdown 标题、列表、表格、引用、代码块或反引号，不重复候选人的整段回答
+                5. 使用统一、克制、专业的中文表达，不使用 emoji，不写寒暄或总结报告
+                6. 在回复最后另起一行输出机器标记 [评分:X/10]，X 为最新回答的 1-10 分整数评分
                 """.formatted(context.toString());
 
         // 流式调用 AI，同时收集 token 用于最后持久化
@@ -272,7 +272,7 @@ public class InterviewService extends ServiceImpl<InterviewMessageMapper, Interv
     }
 
     private Integer extractAnswerScore(String response) {
-        var matcher = java.util.regex.Pattern.compile("\\[评分[：:]?\\s*(10|[1-9])\\s*/\\s*10]", java.util.regex.Pattern.CASE_INSENSITIVE)
+        var matcher = java.util.regex.Pattern.compile("[\\[【]评分[：:]?\\s*(10|[1-9])\\s*/\\s*10[\\]】]", java.util.regex.Pattern.CASE_INSENSITIVE)
                 .matcher(response);
         Integer score = null;
         while (matcher.find()) score = Integer.parseInt(matcher.group(1));

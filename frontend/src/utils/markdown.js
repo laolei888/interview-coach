@@ -23,11 +23,23 @@ export function renderMarkdown(text) {
   return marked.parse(cleaned)
 }
 
+export function renderInterviewMessage(text) {
+  if (!text) return ''
+  const cleaned = stripScore(text)
+    .replace(/^#{1,6}\s*(.+)$/gm, '**$1**')
+    .replace(/^[-*]\s+/gm, '')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+  return marked.parse(cleaned)
+}
+
 export function stripScore(text) {
   if (!text) return ''
   return text
     .replace(/\[评分[：:]*\s*\d+\s*\/\s*\d+\]/g, '')
     .replace(/评分[：:]\s*\d+\s*\/\s*\d+/g, '')
+    .replace(/\n?[\[【]评分[：:]?\s*\d*(?:\s*\/\s*\d*)?[\]】]?$/g, '')
     .replace(/[-—]{1,3}\s*(你|你的回答|候选人).*$/gm, '')
     .trim()
 }

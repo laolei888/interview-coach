@@ -47,7 +47,7 @@
           <span class="msg-avatar"><el-icon><Service v-if="msg.role === 'ai'" /><User v-else /></el-icon></span>
           <div class="msg-body">
             <span class="msg-name">{{ msg.role === 'ai' ? '面试官' : '你' }}</span>
-            <div class="msg-bubble" v-html="renderMarkdown(msg.content)"></div>
+            <div class="msg-bubble" v-html="msg.role === 'ai' ? renderInterviewMessage(msg.content) : renderMarkdown(msg.content)"></div>
           </div>
         </div>
 
@@ -114,7 +114,7 @@
 import { ref, computed, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { startInterview as apiStart, endInterview as apiEnd, createChatStreamUrl, getSessionDetail } from '../api'
-import { renderMarkdown } from '../utils/markdown'
+import { renderInterviewMessage, renderMarkdown } from '../utils/markdown'
 import { Aim, ChatLineRound, DataAnalysis, DocumentChecked, Lock, Service, Suitcase, Timer, User } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
@@ -383,13 +383,12 @@ onBeforeUnmount(() => { if (abortController) abortController.abort(); clearInter
 .msg.ai .msg-bubble { background: var(--hover); border-top-left-radius: 2px; color: var(--text); }
 .msg.user .msg-bubble { background: var(--text); color: var(--bg-card); border-top-right-radius: 2px; }
 
-.msg-bubble :deep(p) { margin: 4px 0; }
-.msg-bubble :deep(h3) { font-size: 15px; margin: 14px 0 6px; padding-bottom: 4px; border-bottom: 1px solid var(--border); color: var(--text); }
-.msg-bubble :deep(h3:first-child) { margin-top: 0; }
+.msg-bubble :deep(p) { margin: 0 0 10px; }.msg-bubble :deep(p:last-child) { margin-bottom: 0; }
+.msg-bubble :deep(h1),.msg-bubble :deep(h2),.msg-bubble :deep(h3),.msg-bubble :deep(h4) { margin: 10px 0 5px; font: inherit; font-weight: 700; color: inherit; }
 .msg-bubble :deep(strong) { font-weight: 700; }
 .msg-bubble :deep(ul), .msg-bubble :deep(ol) { padding-left: 20px; margin: 6px 0; }
 .msg-bubble :deep(li) { margin: 4px 0; line-height: 1.7; }
-.msg-bubble :deep(li::marker) { color: var(--blue); }.msg-bubble :deep(code) { background: var(--bg-card); padding: 2px 6px; border-radius: 4px; font-size: 12px; color: var(--accent); }
+.msg-bubble :deep(li::marker) { color: var(--blue); }.msg-bubble :deep(code) { background: transparent; padding: 0; border-radius: 0; color: inherit; font: inherit; font-weight: 600; }
 .msg.user .msg-bubble :deep(h3) { color: #fff; border-bottom-color: rgba(255,255,255,.25); }
 .msg.user .msg-bubble :deep(code) { background: rgba(255,255,255,.2); color: #fff; }
 

@@ -32,7 +32,7 @@
       <template #header><div class="drawer-title"><span>面试复盘</span><small>{{ detail?.session?.position }}</small></div></template>
       <div v-if="detail" class="review-detail"><section class="detail-summary"><div><span>岗位</span><strong>{{ detail.session.position }}</strong></div><div><span>对话轮次</span><strong>{{ answerCount }} 轮</strong></div><div><span>训练时间</span><strong>{{ formatDate(detail.session.createdAt) }}</strong></div></section>
         <section v-if="summaryMessage" class="assessment"><div class="section-title"><el-icon><DataAnalysis /></el-icon><h2>能力评估</h2><el-button text :icon="Download" @click="downloadInterview">下载报告</el-button></div><article v-html="renderMarkdown(summaryMessage.content.replace('【面试总结】', ''))"></article></section>
-        <section class="conversation"><div class="section-title"><el-icon><ChatDotRound /></el-icon><h2>完整对话</h2></div><div v-for="message in conversationMessages" :key="message.id" :class="['message', message.role]"><span>{{ message.role === 'ai' ? 'AI' : '我' }}</span><article v-html="renderMarkdown(message.content)"></article><b v-if="message.role === 'user' && message.score" class="message-score">{{ message.score }}/10</b></div></section>
+        <section class="conversation"><div class="section-title"><el-icon><ChatDotRound /></el-icon><h2>完整对话</h2></div><div v-for="message in conversationMessages" :key="message.id" :class="['message', message.role]"><span>{{ message.role === 'ai' ? 'AI' : '我' }}</span><article v-html="message.role === 'ai' ? renderInterviewMessage(message.content) : renderMarkdown(message.content)"></article><b v-if="message.role === 'user' && message.score" class="message-score">{{ message.score }}/10</b></div></section>
       </div>
     </el-drawer>
 
@@ -57,7 +57,7 @@ import { useRouter } from 'vue-router'
 import { ArrowRight, BottomRight, ChatDotRound, ChatLineRound, CircleCheck, DataAnalysis, Delete, Document, Download, Search, Select, TopRight, VideoPlay } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { deleteSession, endInterview, getResumeDetail, getResumeHistory, getSessionDetail, getSessions } from '../api'
-import { renderMarkdown } from '../utils/markdown'
+import { renderInterviewMessage, renderMarkdown } from '../utils/markdown'
 
 const router = useRouter(); const activeTab = ref('interview'); const keyword = ref(''); const statusFilter = ref('')
 const sessions = ref([]); const resumes = ref([]); const loadingSessions = ref(false); const loadingResumes = ref(false)
