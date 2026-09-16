@@ -56,7 +56,7 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { analyzeResume, getResumeHistory } from '../api'
+import { analyzeResume, getResumeDetail, getResumeHistory } from '../api'
 import api from '../api'
 import { renderMarkdown } from '../utils/markdown'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -80,7 +80,7 @@ async function loadHistory(selectFirst = true) {
     const res = await getResumeHistory()
     if (res.data.code === 200) {
       reports.value = res.data.data || []
-      if (selectFirst && !activeReport.value && reports.value.length) activeReport.value = reports.value[0]
+      if (selectFirst && !activeReport.value && reports.value.length) await selectReport(reports.value[0])
     }
   } catch (err) { ElMessage.error(err.response?.data?.message || '加载历史报告失败') }
   finally { historyLoading.value = false }
@@ -111,7 +111,16 @@ const startAnalyze = async () => {
   finally { analyzing.value = false }
 }
 
-const selectReport = (item) => { activeReport.value = item }
+const selectReport = async (item) => {
+  const cached = reports.value.find(report => report.id === item.id)
+  if (cached?.aiFeedback) { activeReport.value = cached; return }
+  try {
+    const res = await getResumeDetail(item.id)
+    if (res.data.code !== 200) throw new Error(res.data.message)
+    reports.value = reports.value.map(report => report.id === item.id ? res.data.data : report)
+    activeReport.value = res.data.data
+  } catch (err) { ElMessage.error(err.response?.data?.message || err.message || '报告详情加载失败') }
+}
 const deleteReport = async () => {
   try { await ElMessageBox.confirm('删除后无法恢复，确定删除这份分析报告吗？', '删除报告', { type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消' }) }
   catch { return }

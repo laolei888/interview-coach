@@ -1,6 +1,7 @@
 package com.interviewcoach.controller;
 
 import com.interviewcoach.dto.Result;
+import com.interviewcoach.dto.ResumeSummary;
 import com.interviewcoach.entity.ResumeAnalysis;
 import com.interviewcoach.service.ResumeService;
 import com.interviewcoach.service.AiGateway;
@@ -134,8 +135,8 @@ public class ResumeController {
      * 查询简历分析历史
      */
     @GetMapping("/history")
-    public Result<java.util.List<ResumeAnalysis>> history(@RequestAttribute("userId") Long userId) {
-        return Result.ok(resumeService.listByUserId(userId));
+    public Result<java.util.List<ResumeSummary>> history(@RequestAttribute("userId") Long userId) {
+        return Result.ok(resumeService.listByUserId(userId).stream().map(ResumeSummary::from).toList());
     }
 
     /**
