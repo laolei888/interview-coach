@@ -123,6 +123,7 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { Aim, ArrowRight, ChatDotRound, Clock, Collection, Document, HomeFilled, Moon, Search, Sunny, User, VideoPlay } from '@element-plus/icons-vue'
 import { useUserStore } from './stores/user'
 import { useThemeStore } from './stores/theme'
 import api from './api'
@@ -139,12 +140,12 @@ const selectedCommand = ref(0)
 const commandInput = ref(null)
 let avatarObjectUrl = ''
 const commands = [
-  { title: '训练驾驶舱', description: '查看准备度和今日任务', path: '/', icon: 'HomeFilled', tone: 'teal', shortcut: 'G H', keywords: '首页 看板 dashboard' },
-  { title: '岗位简历诊断', description: '上传简历并结合 JD 分析', path: '/resume', icon: 'Document', tone: 'green', shortcut: 'G R', keywords: '简历 resume ats jd' },
-  { title: 'AI 模拟面试', description: '开始或继续实时面试训练', path: '/interview', icon: 'ChatDotRound', tone: 'coral', shortcut: 'G I', keywords: '面试 interview 对话' },
-  { title: '专注题库练习', description: '练习知识点并追踪掌握度', path: '/questions', icon: 'Collection', tone: 'amber', shortcut: 'G Q', keywords: '题库 练习 question' },
-  { title: '训练记录与复盘', description: '回看面试与简历历史', path: '/history', icon: 'Clock', tone: 'blue', shortcut: 'G L', keywords: '历史 复盘 history report' },
-  { title: '账户与安全', description: '管理资料、头像和密码', path: '/profile', icon: 'User', tone: 'gray', shortcut: 'G P', keywords: '个人 设置 profile security' }
+  { title: '训练驾驶舱', description: '查看准备度和今日任务', path: '/', icon: HomeFilled, tone: 'teal', shortcut: 'G H', keywords: '首页 看板 dashboard' },
+  { title: '岗位简历诊断', description: '上传简历并结合 JD 分析', path: '/resume', icon: Document, tone: 'green', shortcut: 'G R', keywords: '简历 resume ats jd' },
+  { title: 'AI 模拟面试', description: '开始或继续实时面试训练', path: '/interview', icon: ChatDotRound, tone: 'coral', shortcut: 'G I', keywords: '面试 interview 对话' },
+  { title: '专注题库练习', description: '练习知识点并追踪掌握度', path: '/questions', icon: Collection, tone: 'amber', shortcut: 'G Q', keywords: '题库 练习 question' },
+  { title: '训练记录与复盘', description: '回看面试与简历历史', path: '/history', icon: Clock, tone: 'blue', shortcut: 'G L', keywords: '历史 复盘 history report' },
+  { title: '账户与安全', description: '管理资料、头像和密码', path: '/profile', icon: User, tone: 'gray', shortcut: 'G P', keywords: '个人 设置 profile security' }
 ]
 const filteredCommands = computed(() => { const keyword = commandKeyword.value.trim().toLowerCase(); return keyword ? commands.filter(item => `${item.title} ${item.description} ${item.keywords}`.toLowerCase().includes(keyword)) : commands })
 
