@@ -43,11 +43,12 @@ public class UserController {
         if (username == null || username.isBlank() || password == null || password.isBlank()) {
             return Result.badRequest("用户名和密码不能为空");
         }
-        if (username.length() < 3 || username.length() > 20) {
-            return Result.badRequest("用户名长度 3-20 位");
+        username = username.trim();
+        if (!username.matches("^[A-Za-z0-9_]{3,20}$")) {
+            return Result.badRequest("用户名仅支持 3-20 位字母、数字或下划线");
         }
-        if (password.length() < 6) {
-            return Result.badRequest("密码至少 6 位");
+        if (password.length() < 6 || password.length() > 72) {
+            return Result.badRequest("密码长度为 6-72 位");
         }
 
         var user = userService.register(username, password);
@@ -62,12 +63,13 @@ public class UserController {
         String username = body.get("username");
         String password = body.get("password");
 
-        if (username == null || password == null) {
+        if (username == null || password == null || username.isBlank() || password.isBlank()) {
             return Result.badRequest("用户名和密码不能为空");
         }
 
-        String token = userService.login(username, password);
-        return Result.ok(Map.of("token", token, "username", username));
+        String normalizedUsername = username.trim();
+        String token = userService.login(normalizedUsername, password);
+        return Result.ok(Map.of("token", token, "username", normalizedUsername));
     }
 
     /**
