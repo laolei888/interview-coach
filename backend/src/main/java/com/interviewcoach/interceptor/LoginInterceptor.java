@@ -1,6 +1,8 @@
 package com.interviewcoach.interceptor;
 
 import com.interviewcoach.utils.JwtUtil;
+import com.interviewcoach.service.UserService;
+import lombok.RequiredArgsConstructor;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.stereotype.Component;
@@ -12,7 +14,10 @@ import java.io.IOException;
  * 登录拦截器 — 校验 JWT Token
  */
 @Component
+@RequiredArgsConstructor
 public class LoginInterceptor implements HandlerInterceptor {
+
+    private final UserService userService;
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response,
@@ -37,8 +42,17 @@ public class LoginInterceptor implements HandlerInterceptor {
             return false;
         }
 
+        Long userId = JwtUtil.getUserId(token);
+        Integer tokenVersion = JwtUtil.getTokenVersion(token);
+        var user = userId == null ? null : userService.getById(userId);
+        if (user == null || tokenVersion == null || !tokenVersion.equals(user.getTokenVersion() == null ? 0 : user.getTokenVersion())) {
+            response.setStatus(401);
+            writeUnauthorized(response);
+            return false;
+        }
+
         // 将用户信息存入 request 属性，Controller 中可以获取
-        request.setAttribute("userId", JwtUtil.getUserId(token));
+        request.setAttribute("userId", userId);
         request.setAttribute("username", JwtUtil.getUsername(token));
         return true;
     }

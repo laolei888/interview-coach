@@ -52,7 +52,7 @@ public class UserService extends ServiceImpl<UserMapper, User> {
             log.info("用户 {} 的密码摘要已升级", username);
         }
         log.info("用户登录: {}", username);
-        return JwtUtil.generate(user.getId(), user.getUsername());
+        return JwtUtil.generate(user.getId(), user.getUsername(), user.getTokenVersion());
     }
 
     /**
@@ -63,6 +63,7 @@ public class UserService extends ServiceImpl<UserMapper, User> {
         if (user == null) throw new IllegalArgumentException("用户不存在");
         if (!matches(oldPwd, user.getPassword())) throw new IllegalArgumentException("原密码错误");
         user.setPassword(PASSWORD_ENCODER.encode(newPwd));
+        user.setTokenVersion((user.getTokenVersion() == null ? 0 : user.getTokenVersion()) + 1);
         updateById(user);
         log.info("用户 {} 修改了密码", user.getUsername());
     }

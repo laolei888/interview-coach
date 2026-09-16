@@ -6,27 +6,27 @@
     </header>
 
     <section class="identity-band">
-      <button class="avatar-button" type="button" aria-label="更换头像" @click="triggerUpload">
+      <div class="identity-main"><button class="avatar-button" type="button" aria-label="更换头像" @click="triggerUpload">
         <img v-if="avatarPreview" :src="avatarPreview" alt="用户头像" />
         <span v-else>{{ initial }}</span>
         <i><el-icon><Camera /></el-icon></i>
       </button>
       <input ref="fileInput" hidden type="file" accept="image/jpeg,image/png,image/gif,image/webp" @change="uploadAvatar" />
-      <div class="identity-copy"><h2>{{ profile.username || '加载中' }}</h2><p>{{ profile.email || '尚未绑定邮箱' }}</p></div>
-      <div class="account-state"><span></span>账户正常</div>
+      <div class="identity-copy"><span>个人训练档案</span><h2>{{ profile.username || '加载中' }}</h2><p>{{ profile.email || '尚未绑定邮箱' }} · {{ memberSince }}</p></div></div>
+      <div class="identity-score"><div class="profile-ring" :style="{ '--score': readinessScore }"><span><strong>{{ readinessScore }}</strong><small>准备度</small></span></div><div><span class="account-state"><i></i>账户正常</span><p>训练数据与安全设置已同步</p></div></div>
     </section>
 
     <section class="metric-strip" v-loading="statsLoading">
       <div><strong>{{ stats.interviewCount }}</strong><span>模拟面试</span></div>
       <div><strong>{{ stats.completedCount }}</strong><span>完成复盘</span></div>
       <div><strong>{{ stats.resumeCount }}</strong><span>简历报告</span></div>
-      <div><strong>{{ stats.questionCount }}</strong><span>可练习题目</span></div>
+      <div><strong>{{ questionMastery }}%</strong><span>题库掌握率</span></div>
     </section>
 
     <div class="settings-layout">
       <nav class="settings-nav" aria-label="设置分类">
-        <button :class="{ active: activeSection === 'profile' }" @click="activeSection = 'profile'"><el-icon><User /></el-icon><span>基本资料</span><el-icon><ArrowRight /></el-icon></button>
-        <button :class="{ active: activeSection === 'security' }" @click="activeSection = 'security'"><el-icon><Lock /></el-icon><span>登录安全</span><el-icon><ArrowRight /></el-icon></button>
+        <div><span>账户管理</span></div><button :class="{ active: activeSection === 'profile' }" @click="activeSection = 'profile'"><el-icon><User /></el-icon><span><strong>基本资料</strong><small>头像、邮箱与个人信息</small></span><el-icon><ArrowRight /></el-icon></button>
+        <button :class="{ active: activeSection === 'security' }" @click="activeSection = 'security'"><el-icon><Lock /></el-icon><span><strong>登录安全</strong><small>密码与会话保护</small></span><el-icon><ArrowRight /></el-icon></button>
       </nav>
 
       <section v-if="activeSection === 'profile'" class="settings-panel">
@@ -41,7 +41,7 @@
 
       <section v-else class="settings-panel">
         <div class="panel-head"><h2>登录安全</h2><p>定期更新密码，降低账户被盗用的风险。</p></div>
-        <div class="security-status"><el-icon><CircleCheckFilled /></el-icon><div><strong>密码保护已启用</strong><span>你的密码以不可逆方式加密存储</span></div></div>
+        <div class="security-grid"><div class="security-status"><el-icon><CircleCheckFilled /></el-icon><div><strong>密码保护已启用</strong><span>密码使用 BCrypt 不可逆摘要存储</span></div></div><div class="security-status session"><el-icon><Key /></el-icon><div><strong>会话撤销已启用</strong><span>修改密码后，其他设备上的旧会话会立即失效</span></div></div></div>
         <el-form label-position="top" class="settings-form password-form">
           <el-form-item label="当前密码"><el-input v-model="password.oldPassword" type="password" show-password autocomplete="current-password" /></el-form-item>
           <div class="password-grid">
@@ -60,7 +60,7 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ArrowRight, Camera, CircleCheckFilled, Lock, Message, SwitchButton, User } from '@element-plus/icons-vue'
+import { ArrowRight, Camera, CircleCheckFilled, Key, Lock, Message, SwitchButton, User } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import api from '../api'
 import { useUserStore } from '../stores/user'
@@ -74,12 +74,15 @@ const changingPassword = ref(false)
 const statsLoading = ref(false)
 const avatarPreview = ref('')
 const avatarPath = ref('')
-const profile = reactive({ username: '', email: '', gender: '保密' })
+const profile = reactive({ username: '', email: '', gender: '保密', createdAt: '' })
 const password = reactive({ oldPassword: '', newPassword: '', confirmPassword: '' })
-const stats = reactive({ interviewCount: 0, completedCount: 0, resumeCount: 0, questionCount: 0 })
+const stats = reactive({ interviewCount: 0, completedCount: 0, resumeCount: 0, questionCount: 0, averageResumeScore: 0, questionProgress: { practiced: 0, mastered: 0, review: 0 } })
 let objectUrl = ''
 
 const initial = computed(() => (profile.username || 'U').slice(0, 1).toUpperCase())
+const memberSince = computed(() => profile.createdAt ? `${new Date(profile.createdAt).toLocaleDateString('zh-CN', { year: 'numeric', month: 'long' })}加入` : '训练账号')
+const questionMastery = computed(() => stats.questionProgress.practiced ? Math.round(stats.questionProgress.mastered / stats.questionProgress.practiced * 100) : 0)
+const readinessScore = computed(() => Math.round(Math.min(100, (stats.completedCount ? Math.min(100, stats.completedCount * 20) : 0) * .35 + (stats.averageResumeScore || 0) * .35 + questionMastery.value * .3)))
 const emailError = computed(() => profile.email && !/^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(profile.email) ? '请输入有效的邮箱地址' : '')
 const confirmError = computed(() => password.confirmPassword && password.newPassword !== password.confirmPassword ? '两次输入的密码不一致' : '')
 const passwordStrength = computed(() => {
@@ -97,7 +100,7 @@ onMounted(async () => {
     const [userRes, statsRes] = await Promise.all([api.get('/user/me'), api.get('/stats/dashboard')])
     if (userRes.data.code === 200) {
       const data = userRes.data.data
-      Object.assign(profile, { username: data.username, email: data.email || '', gender: data.gender || '保密' })
+      Object.assign(profile, { username: data.username, email: data.email || '', gender: data.gender || '保密', createdAt: data.createdAt || '' })
       avatarPath.value = data.avatar || ''
       await loadAvatar(data.avatar)
     }
@@ -162,32 +165,29 @@ function logout() { userStore.logout(); router.push('/login') }
 </script>
 
 <style scoped>
-.account-page { max-width: 1080px; margin: 0 auto; color: var(--text); }
+.account-page { max-width: 1180px; margin: 0 auto; color: var(--text); }
 .page-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; margin-bottom: 24px; }
 .eyebrow { color: var(--blue); font-size: 12px; font-weight: 700; }
 .page-header h1 { margin: 5px 0 7px; font-size: 30px; letter-spacing: 0; }
 .page-header p { color: var(--text-muted); font-size: 14px; }
-.identity-band { display: flex; align-items: center; gap: 18px; padding: 24px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.identity-band { min-height: 156px; display: flex; align-items: center; justify-content: space-between; gap: 28px; padding: 26px 30px; border-radius: 8px; position: relative; overflow: hidden; background: #172724; color: #fff; }.identity-band::after { content: ''; position: absolute; inset: 0 0 0 65%; background: url('https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=700&q=80') center/cover; opacity: .1; }.identity-main,.identity-score { position: relative; z-index: 1; display: flex; align-items: center; gap: 18px; }
 .avatar-button { position: relative; width: 76px; height: 76px; flex: 0 0 76px; padding: 0; border: 1px solid var(--border); border-radius: 50%; overflow: hidden; background: var(--blue-light); color: var(--blue); font-size: 28px; font-weight: 700; cursor: pointer; }
 .avatar-button img { width: 100%; height: 100%; object-fit: cover; }
 .avatar-button i { position: absolute; right: 0; bottom: 0; width: 27px; height: 27px; display: grid; place-items: center; border: 2px solid var(--bg); border-radius: 50%; background: var(--text); color: var(--bg-card); font-size: 13px; }
 .identity-copy { min-width: 0; flex: 1; }
-.identity-copy h2 { margin-bottom: 5px; font-size: 20px; }
-.identity-copy p { color: var(--text-muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; }
-.account-state { display: flex; align-items: center; gap: 7px; color: #36a269; font-size: 13px; }
-.account-state span { width: 8px; height: 8px; border-radius: 50%; background: #36a269; }
-.metric-strip { display: grid; grid-template-columns: repeat(4, 1fr); min-height: 84px; margin: 18px 0; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-card); }
+.identity-copy > span { color: #82cfc4; font-size: 9px; font-weight: 700; }.identity-copy h2 { margin: 5px 0; color: #fff; font-size: 23px; }.identity-copy p { color: rgba(255,255,255,.55); font-size: 11px; overflow: hidden; text-overflow: ellipsis; }.profile-ring { --score: 0; width: 84px; height: 84px; display: grid; place-items: center; border-radius: 50%; position: relative; background: conic-gradient(#62c8ba calc(var(--score) * 1%),rgba(255,255,255,.1) 0); }.profile-ring::after { content: ''; position: absolute; inset: 7px; border-radius: 50%; background: #172724; }.profile-ring span { position: relative; z-index: 1; text-align: center; }.profile-ring strong,.profile-ring small { display: block; }.profile-ring strong { font-size: 22px; }.profile-ring small { color: rgba(255,255,255,.5); font-size: 8px; }.account-state { display: flex; align-items: center; gap: 7px; color: #82cfc4; font-size: 11px; font-weight: 700; }.account-state i { width: 7px; height: 7px; border-radius: 50%; background: #56ca91; }.identity-score p { margin-top: 5px; color: rgba(255,255,255,.48); font-size: 9px; }
+.metric-strip { display: grid; grid-template-columns: repeat(4, 1fr); min-height: 84px; margin: 16px 0; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-card); }
 .metric-strip div { padding: 17px 20px; border-right: 1px solid var(--border); }
 .metric-strip div:last-child { border-right: 0; }
 .metric-strip strong, .metric-strip span { display: block; }
 .metric-strip strong { margin-bottom: 3px; font-size: 23px; }
 .metric-strip span { color: var(--text-muted); font-size: 12px; }
-.settings-layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 18px; align-items: start; }
+.settings-layout { display: grid; grid-template-columns: 248px minmax(0, 1fr); gap: 16px; align-items: start; }
 .settings-nav, .settings-panel { border: 1px solid var(--border); border-radius: 8px; background: var(--bg-card); }
-.settings-nav { padding: 8px; }
-.settings-nav button { width: 100%; display: grid; grid-template-columns: 22px 1fr 18px; align-items: center; gap: 8px; padding: 12px; border: 0; border-radius: 6px; background: transparent; color: var(--text-secondary); text-align: left; cursor: pointer; }
+.settings-nav { padding: 8px; }.settings-nav > div { padding: 10px 12px 7px; color: var(--text-muted); font-size: 9px; font-weight: 700; }.settings-nav button { width: 100%; display: grid; grid-template-columns: 25px 1fr 18px; align-items: center; gap: 8px; padding: 12px; border: 0; border-radius: 6px; background: transparent; color: var(--text-secondary); text-align: left; cursor: pointer; }
 .settings-nav button:hover { background: var(--hover); }
 .settings-nav button.active { background: var(--blue-light); color: var(--blue); font-weight: 600; }
+.settings-nav button span,.settings-nav button strong,.settings-nav button small { display: block; }.settings-nav button strong { font-size: 11px; }.settings-nav button small { margin-top: 3px; color: var(--text-muted); font-size: 8px; font-weight: 400; }
 .settings-panel { overflow: hidden; }
 .panel-head { padding: 22px 24px; border-bottom: 1px solid var(--border); }
 .panel-head h2 { margin-bottom: 5px; font-size: 18px; }
@@ -195,7 +195,7 @@ function logout() { userStore.logout(); router.push('/login') }
 .settings-form { max-width: 650px; padding: 24px; }
 .settings-form :deep(.el-form-item) { margin-bottom: 21px; }
 .form-actions { display: flex; justify-content: flex-end; padding-top: 5px; }
-.security-status { display: flex; align-items: center; gap: 12px; margin: 24px 24px 0; padding: 14px 16px; border: 1px solid #bce3cd; border-radius: 7px; background: rgba(54, 162, 105, .07); color: #268653; }
+.security-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 24px 24px 0; }.security-status { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border: 1px solid #bce3cd; border-radius: 7px; background: rgba(54,162,105,.07); color: #268653; }.security-status.session { border-color: color-mix(in srgb,var(--blue) 35%,var(--border)); background: var(--blue-light); color: var(--blue); }
 .security-status > .el-icon { font-size: 24px; }
 .security-status strong, .security-status span { display: block; }
 .security-status strong { font-size: 14px; }
@@ -206,15 +206,15 @@ function logout() { userStore.logout(); router.push('/login') }
 .password-hint { margin-top: 8px; color: var(--text-muted); font-size: 12px; }
 @media (max-width: 720px) {
   .page-header { align-items: flex-start; flex-direction: column; }
-  .identity-band { flex-wrap: wrap; }
-  .account-state { width: 100%; padding-left: 94px; }
+  .identity-band { align-items: flex-start; flex-direction: column; padding: 22px 18px; }.identity-score { width: 100%; padding-top: 16px; border-top: 1px solid rgba(255,255,255,.1); }.profile-ring { width: 68px; height: 68px; }
   .metric-strip { grid-template-columns: repeat(2, 1fr); }
   .metric-strip div:nth-child(2) { border-right: 0; }
   .metric-strip div:nth-child(-n+2) { border-bottom: 1px solid var(--border); }
   .settings-layout { grid-template-columns: 1fr; }
-  .settings-nav { display: grid; grid-template-columns: 1fr 1fr; }
+  .settings-nav { display: grid; grid-template-columns: 1fr 1fr; }.settings-nav > div { display: none; }
   .settings-nav button .el-icon:last-child { display: none; }
   .password-grid { grid-template-columns: 1fr; gap: 0; }
+  .security-grid { grid-template-columns: 1fr; margin: 16px 16px 0; }
 }
 @media (max-width: 420px) { .settings-form, .panel-head { padding-left: 16px; padding-right: 16px; } }
 </style>

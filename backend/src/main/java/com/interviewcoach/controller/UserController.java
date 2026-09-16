@@ -81,6 +81,7 @@ public class UserController {
         return Result.ok(Map.of(
                 "userId", user.getId(),
                 "username", user.getUsername(),
+                "createdAt", user.getCreatedAt(),
                 "avatar", avatarValue(user.getAvatar()),
                 "gender", user.getGender() != null ? user.getGender() : "保密",
                 "email", user.getEmail() != null ? user.getEmail() : ""

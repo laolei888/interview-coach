@@ -25,11 +25,12 @@ class UserServiceTest {
 
     @Test
     void testJwtGenerateAndValidate() {
-        String token = JwtUtil.generate(1L, "test");
+        String token = JwtUtil.generate(1L, "test", 3);
         assertNotNull(token);
         assertTrue(JwtUtil.validate(token));
         assertEquals(1L, JwtUtil.getUserId(token));
         assertEquals("test", JwtUtil.getUsername(token));
+        assertEquals(3, JwtUtil.getTokenVersion(token));
     }
 
     @Test

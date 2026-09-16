@@ -21,10 +21,11 @@ public class JwtUtil {
     /**
      * 生成 Token
      */
-    public static String generate(Long userId, String username) {
+    public static String generate(Long userId, String username, Integer tokenVersion) {
         return Jwts.builder()
                 .subject(String.valueOf(userId))
                 .claim("username", username)
+                .claim("tokenVersion", tokenVersion == null ? 0 : tokenVersion)
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + EXPIRE))
                 .signWith(KEY)
@@ -49,6 +50,14 @@ public class JwtUtil {
     public static String getUsername(String token) {
         try {
             return (String) parse(token).getPayload().get("username");
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public static Integer getTokenVersion(String token) {
+        try {
+            return ((Number) parse(token).getPayload().get("tokenVersion")).intValue();
         } catch (Exception e) {
             return null;
         }

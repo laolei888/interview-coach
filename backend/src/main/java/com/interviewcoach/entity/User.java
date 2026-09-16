@@ -18,6 +18,9 @@ public class User {
 
     private String password;
 
+    /** 修改密码时递增，使此前签发的 JWT 立即失效 */
+    private Integer tokenVersion;
+
     /** 头像 emoji */
     private String avatar;
 
