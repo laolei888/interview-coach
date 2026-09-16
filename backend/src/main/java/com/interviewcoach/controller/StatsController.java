@@ -4,6 +4,7 @@ import com.interviewcoach.dto.Result;
 import com.interviewcoach.service.InterviewService;
 import com.interviewcoach.service.ResumeService;
 import com.interviewcoach.service.QuestionService;
+import com.interviewcoach.service.QuestionProgressService;
 import lombok.RequiredArgsConstructor;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -28,6 +29,7 @@ public class StatsController {
     private final InterviewService interviewService;
     private final ResumeService resumeService;
     private final QuestionService questionService;
+    private final QuestionProgressService questionProgressService;
 
     @GetMapping("/dashboard")
     public Result<Map<String, Object>> dashboard(HttpServletRequest request) {
@@ -68,6 +70,7 @@ public class StatsController {
         data.put("resumeCount", resumeCount);
         data.put("averageResumeScore", Math.round(averageResumeScore));
         data.put("questionCount", questionCount);
+        data.put("questionProgress", questionProgressService.stats(userId));
         data.put("weeklyTrend", weeklyTrend);
         data.put("positionDistribution", positionDistribution);
         return Result.ok(data);

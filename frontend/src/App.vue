@@ -3,19 +3,17 @@
     <!-- ======== 侧边栏布局（功能页） ======== -->
     <div v-if="showSidebar" class="layout">
       <aside class="sidebar" :class="{ collapsed: sidebarCollapsed }">
-        <!-- 用户头像 -->
+        <button class="workspace-brand" type="button" @click="router.push('/')"><span><el-icon><Aim /></el-icon></span><div v-if="!sidebarCollapsed"><strong>Interview Coach</strong><small>求职训练工作台</small></div></button>
+        <div v-if="!sidebarCollapsed" class="nav-label">工作空间</div>
         <div class="sb-user" @click="$router.push('/profile')">
           <img v-if="isImageAvatar" :src="userAvatar" class="sb-avatar" />
-          <span v-else class="sb-avatar-d">{{ isImageAvatar ? '' : userAvatar }}</span>
+          <span v-else class="sb-avatar-d"><el-icon><User /></el-icon></span>
           <div v-if="!sidebarCollapsed" class="sb-info">
             <strong>{{ userStore.username }}</strong>
             <small>个人中心</small>
           </div>
         </div>
 
-        <el-divider style="margin:8px 0" />
-
-        <!-- 菜单 -->
         <el-menu :default-active="route.path" :collapse="sidebarCollapsed" router class="sb-menu">
           <el-menu-item index="/">
             <el-icon><HomeFilled /></el-icon><span>首页</span>
@@ -33,6 +31,10 @@
             <el-icon><Clock /></el-icon><span>历史记录</span>
           </el-menu-item>
         </el-menu>
+
+        <button v-if="!sidebarCollapsed" class="sidebar-cta" type="button" @click="router.push('/interview')"><span><el-icon><VideoPlay /></el-icon></span><div><strong>开始模拟面试</strong><small>进入新一轮岗位训练</small></div><el-icon><ArrowRight /></el-icon></button>
+
+        <div v-if="!sidebarCollapsed" class="service-state"><i></i><span><strong>服务运行正常</strong><small>AI · 数据库 · Redis</small></span></div>
 
         <div class="sb-bottom">
           <div class="sb-bottom-item" @click="themeStore.toggle()">
@@ -123,10 +125,9 @@ let avatarObjectUrl = ''
 // 判断头像是不是真实图片路径（非 emoji）
 const isImageAvatar = computed(() => userAvatar.value && (userAvatar.value.startsWith('blob:') || userAvatar.value.startsWith('http')))
 
-// 首页和登录页用全宽布局，其他页用侧边栏
+// 登录后统一进入工作台布局，访客首页和登录页保持全宽展示。
 const showSidebar = computed(() => {
-  const fullPages = ['/', '/login']
-  return userStore.isLoggedIn() && !fullPages.includes(route.path)
+  return userStore.isLoggedIn() && route.path !== '/login'
 })
 
 onMounted(async () => {
@@ -210,20 +211,21 @@ body {
 /* ======== 侧边栏布局 ======== */
 .layout { display: flex; min-height: 100vh; }
 .sidebar {
-  width: 240px; flex-shrink: 0;
+  width: 256px; flex-shrink: 0;
   background: var(--sidebar-bg); border-right: 1px solid var(--border);
   display: flex; flex-direction: column;
-  transition: width .2s; overflow: hidden;
+  position: sticky; top: 0; height: 100vh; transition: width .2s; overflow: hidden;
 }
-.sidebar.collapsed { width: 64px; }
+.sidebar.collapsed { width: 72px; }
+.workspace-brand { height: 76px; display: flex; align-items: center; gap: 11px; padding: 0 17px; border: 0; border-bottom: 1px solid var(--border); background: transparent; color: var(--text); text-align: left; cursor: pointer; white-space: nowrap; }.workspace-brand > span { width: 36px; height: 36px; display: grid; flex: 0 0 36px; place-items: center; border-radius: 8px; background: var(--blue); color: #fff; font-size: 19px; }.workspace-brand strong,.workspace-brand small { display: block; }.workspace-brand strong { font-size: 14px; }.workspace-brand small { margin-top: 3px; color: var(--text-muted); font-size: 9px; }.nav-label { padding: 20px 20px 8px; color: var(--text-muted); font-size: 9px; font-weight: 700; text-transform: uppercase; }
 
 .sb-user {
   display: flex; align-items: center; gap: 12px;
-  padding: 16px; cursor: pointer; transition: background .15s;
+  margin: 4px 9px 12px; padding: 10px; border: 1px solid var(--border); border-radius: 8px; cursor: pointer; transition: background .15s;
 }
 .sb-user:hover { background: var(--hover); }
 .sb-avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
-.sb-avatar-d { font-size: 28px; flex-shrink: 0; }
+.sb-avatar-d { width: 36px; height: 36px; display: grid; flex-shrink: 0; place-items: center; border-radius: 7px; background: var(--blue-light); color: var(--blue); font-size: 18px; }
 .sb-info strong { display: block; font-size: 14px; color: var(--text); }
 .sb-info small { font-size: 12px; color: var(--text-muted); }
 
@@ -233,12 +235,13 @@ body {
 }
 .sb-menu :deep(.el-menu-item) {
   color: var(--text-secondary);
-  height: 44px; line-height: 44px; margin: 2px 8px; border-radius: 8px;
+  height: 45px; line-height: 45px; margin: 3px 9px; border-radius: 7px;
 }
 .sb-menu :deep(.el-menu-item:hover) { background: var(--hover); color: var(--text); }
 .sb-menu :deep(.el-menu-item.is-active) {
-  background: var(--blue-light); color: var(--blue); font-weight: 600;
+  background: var(--text); color: var(--bg-card); font-weight: 600;
 }
+.sidebar-cta { display: flex; align-items: center; gap: 10px; margin: 10px 12px; padding: 13px 12px; border: 0; border-radius: 8px; background: var(--blue); color: #fff; text-align: left; cursor: pointer; }.sidebar-cta > span { width: 30px; height: 30px; display: grid; flex: 0 0 30px; place-items: center; border-radius: 6px; background: rgba(255,255,255,.16); }.sidebar-cta > div { min-width: 0; flex: 1; }.sidebar-cta strong,.sidebar-cta small { display: block; }.sidebar-cta strong { font-size: 11px; }.sidebar-cta small { margin-top: 3px; color: rgba(255,255,255,.7); font-size: 8px; }.service-state { display: flex; align-items: center; gap: 9px; margin: 3px 17px 12px; }.service-state i { width: 7px; height: 7px; border-radius: 50%; background: #37b87c; box-shadow: 0 0 0 4px rgba(55,184,124,.12); }.service-state span,.service-state strong,.service-state small { display: block; }.service-state strong { color: var(--text-secondary); font-size: 9px; }.service-state small { margin-top: 2px; color: var(--text-muted); font-size: 8px; }
 
 .sb-bottom {
   padding: 8px;
@@ -254,7 +257,7 @@ body {
 .sb-bottom-item:hover { background: var(--hover); }
 
 .main-area {
-  flex: 1; overflow-y: auto; padding: 24px 28px;
+  min-width: 0; flex: 1; overflow-y: auto; padding: 30px clamp(22px,3vw,44px) 48px;
   background: var(--bg);
 }
 .mobile-header, .mobile-nav { display: none; }
@@ -315,6 +318,6 @@ html.dark .el-form-item__label { color: var(--text-secondary); }
 html.dark .el-dialog__title { color: var(--text); }
 html.dark .el-menu-item { color: var(--text-secondary) !important; }
 html.dark .el-menu-item:hover { background: var(--hover) !important; }
-html.dark .el-menu-item.is-active { background: var(--blue-light) !important; color: var(--blue) !important; }
+html.dark .el-menu-item.is-active { background: var(--text) !important; color: var(--bg) !important; }
 html.dark .el-divider__text { background: var(--bg-card); color: var(--text-muted); }
 </style>
