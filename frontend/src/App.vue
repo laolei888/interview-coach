@@ -32,6 +32,8 @@
           </el-menu-item>
         </el-menu>
 
+        <button class="command-trigger" type="button" :title="sidebarCollapsed ? '快速搜索' : ''" @click="openCommand"><el-icon><Search /></el-icon><span v-if="!sidebarCollapsed">快速搜索</span><kbd v-if="!sidebarCollapsed">Ctrl K</kbd></button>
+
         <button v-if="!sidebarCollapsed" class="sidebar-cta" type="button" @click="router.push('/interview')"><span><el-icon><VideoPlay /></el-icon></span><div><strong>开始模拟面试</strong><small>进入新一轮岗位训练</small></div><el-icon><ArrowRight /></el-icon></button>
 
         <div v-if="!sidebarCollapsed" class="service-state"><i></i><span><strong>服务运行正常</strong><small>AI · 数据库 · Redis</small></span></div>
@@ -54,6 +56,7 @@
             <el-icon><Aim /></el-icon><span>Interview Coach</span>
           </button>
           <div class="mobile-actions">
+            <el-button text circle title="快速搜索" @click="openCommand"><el-icon><Search /></el-icon></el-button>
             <el-button text circle :title="themeStore.dark ? '亮色模式' : '深色模式'" @click="themeStore.toggle()">
               <el-icon><Sunny v-if="themeStore.dark" /><Moon v-else /></el-icon>
             </el-button>
@@ -73,6 +76,16 @@
         <router-link to="/questions" aria-label="题库"><el-icon><Collection /></el-icon><span>题库</span></router-link>
         <router-link to="/history" aria-label="历史记录"><el-icon><Clock /></el-icon><span>历史</span></router-link>
       </nav>
+
+      <el-dialog v-model="commandVisible" width="min(620px, calc(100% - 28px))" class="command-dialog" :show-close="false" append-to-body @opened="focusCommand">
+        <div class="command-input"><el-icon><Search /></el-icon><input ref="commandInput" v-model="commandKeyword" placeholder="搜索功能或输入操作名称" @keydown.down.prevent="moveCommand(1)" @keydown.up.prevent="moveCommand(-1)" @keydown.enter.prevent="runSelected" /><kbd>ESC</kbd></div>
+        <div class="command-results">
+          <div class="command-label">{{ commandKeyword ? '搜索结果' : '快速前往' }}</div>
+          <button v-for="(item, index) in filteredCommands" :key="item.path" :class="{ active: selectedCommand === index }" type="button" @mouseenter="selectedCommand = index" @click="runCommand(item)"><span :class="['command-icon', item.tone]"><el-icon><component :is="item.icon" /></el-icon></span><span><strong>{{ item.title }}</strong><small>{{ item.description }}</small></span><kbd>{{ item.shortcut }}</kbd><el-icon><ArrowRight /></el-icon></button>
+          <div v-if="!filteredCommands.length" class="command-empty">没有匹配的功能</div>
+        </div>
+        <div class="command-foot"><span><kbd>↑</kbd><kbd>↓</kbd> 选择</span><span><kbd>Enter</kbd> 打开</span><span><kbd>Esc</kbd> 关闭</span></div>
+      </el-dialog>
     </div>
 
     <!-- ======== 全宽布局（首页 / 登录） ======== -->
@@ -108,7 +121,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from './stores/user'
 import { useThemeStore } from './stores/theme'
@@ -120,7 +133,20 @@ const userStore = useUserStore()
 const themeStore = useThemeStore()
 const userAvatar = ref('')
 const sidebarCollapsed = ref(false)
+const commandVisible = ref(false)
+const commandKeyword = ref('')
+const selectedCommand = ref(0)
+const commandInput = ref(null)
 let avatarObjectUrl = ''
+const commands = [
+  { title: '训练驾驶舱', description: '查看准备度和今日任务', path: '/', icon: 'HomeFilled', tone: 'teal', shortcut: 'G H', keywords: '首页 看板 dashboard' },
+  { title: '岗位简历诊断', description: '上传简历并结合 JD 分析', path: '/resume', icon: 'Document', tone: 'green', shortcut: 'G R', keywords: '简历 resume ats jd' },
+  { title: 'AI 模拟面试', description: '开始或继续实时面试训练', path: '/interview', icon: 'ChatDotRound', tone: 'coral', shortcut: 'G I', keywords: '面试 interview 对话' },
+  { title: '专注题库练习', description: '练习知识点并追踪掌握度', path: '/questions', icon: 'Collection', tone: 'amber', shortcut: 'G Q', keywords: '题库 练习 question' },
+  { title: '训练记录与复盘', description: '回看面试与简历历史', path: '/history', icon: 'Clock', tone: 'blue', shortcut: 'G L', keywords: '历史 复盘 history report' },
+  { title: '账户与安全', description: '管理资料、头像和密码', path: '/profile', icon: 'User', tone: 'gray', shortcut: 'G P', keywords: '个人 设置 profile security' }
+]
+const filteredCommands = computed(() => { const keyword = commandKeyword.value.trim().toLowerCase(); return keyword ? commands.filter(item => `${item.title} ${item.description} ${item.keywords}`.toLowerCase().includes(keyword)) : commands })
 
 // 判断头像是不是真实图片路径（非 emoji）
 const isImageAvatar = computed(() => userAvatar.value && (userAvatar.value.startsWith('blob:') || userAvatar.value.startsWith('http')))
@@ -130,7 +156,9 @@ const showSidebar = computed(() => {
   return userStore.isLoggedIn() && route.path !== '/login'
 })
 
+const handleShortcut = event => { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); commandVisible.value ? commandVisible.value = false : openCommand() } }
 onMounted(async () => {
+  window.addEventListener('keydown', handleShortcut)
   if (userStore.isLoggedIn()) {
     try {
       const res = await api.get('/user/me')
@@ -149,10 +177,17 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(() => {
+  window.removeEventListener('keydown', handleShortcut)
   if (avatarObjectUrl) URL.revokeObjectURL(avatarObjectUrl)
 })
 
 const handleLogout = () => { userStore.logout(); router.push('/') }
+const openCommand = () => { commandKeyword.value = ''; selectedCommand.value = 0; commandVisible.value = true }
+const focusCommand = () => nextTick(() => commandInput.value?.focus())
+const moveCommand = delta => { const length = filteredCommands.value.length; if (length) selectedCommand.value = (selectedCommand.value + delta + length) % length }
+const runCommand = item => { commandVisible.value = false; router.push(item.path) }
+const runSelected = () => { const item = filteredCommands.value[selectedCommand.value]; if (item) runCommand(item) }
+watch(commandKeyword, () => { selectedCommand.value = 0 })
 </script>
 
 <style>
@@ -241,6 +276,7 @@ body {
 .sb-menu :deep(.el-menu-item.is-active) {
   background: var(--text); color: var(--bg-card); font-weight: 600;
 }
+.command-trigger { height: 39px; display: flex; align-items: center; gap: 10px; margin: 4px 10px 8px; padding: 0 12px; border: 1px solid var(--border); border-radius: 7px; background: var(--bg-card); color: var(--text-muted); cursor: pointer; font-size: 11px; white-space: nowrap; }.command-trigger span { flex: 1; text-align: left; }.command-trigger kbd { padding: 2px 5px; border: 1px solid var(--border); border-radius: 4px; background: var(--hover); color: var(--text-muted); font: 8px ui-monospace,monospace; }.sidebar.collapsed .command-trigger { width: 42px; justify-content: center; margin-inline: 15px; padding: 0; }
 .sidebar-cta { display: flex; align-items: center; gap: 10px; margin: 10px 12px; padding: 13px 12px; border: 0; border-radius: 8px; background: var(--blue); color: #fff; text-align: left; cursor: pointer; }.sidebar-cta > span { width: 30px; height: 30px; display: grid; flex: 0 0 30px; place-items: center; border-radius: 6px; background: rgba(255,255,255,.16); }.sidebar-cta > div { min-width: 0; flex: 1; }.sidebar-cta strong,.sidebar-cta small { display: block; }.sidebar-cta strong { font-size: 11px; }.sidebar-cta small { margin-top: 3px; color: rgba(255,255,255,.7); font-size: 8px; }.service-state { display: flex; align-items: center; gap: 9px; margin: 3px 17px 12px; }.service-state i { width: 7px; height: 7px; border-radius: 50%; background: #37b87c; box-shadow: 0 0 0 4px rgba(55,184,124,.12); }.service-state span,.service-state strong,.service-state small { display: block; }.service-state strong { color: var(--text-secondary); font-size: 9px; }.service-state small { margin-top: 2px; color: var(--text-muted); font-size: 8px; }
 
 .sb-bottom {
@@ -320,4 +356,5 @@ html.dark .el-menu-item { color: var(--text-secondary) !important; }
 html.dark .el-menu-item:hover { background: var(--hover) !important; }
 html.dark .el-menu-item.is-active { background: var(--text) !important; color: var(--bg) !important; }
 html.dark .el-divider__text { background: var(--bg-card); color: var(--text-muted); }
+.command-dialog { border-radius: 8px !important; overflow: hidden; }.command-dialog .el-dialog__header { display: none; }.command-dialog .el-dialog__body { padding: 0; }.command-input { height: 58px; display: flex; align-items: center; gap: 11px; padding: 0 17px; border-bottom: 1px solid var(--border); color: var(--text-muted); }.command-input > .el-icon { font-size: 19px; }.command-input input { min-width: 0; flex: 1; border: 0; outline: 0; background: transparent; color: var(--text); font: inherit; font-size: 14px; }.command-input input::placeholder { color: var(--text-muted); }.command-input kbd,.command-foot kbd { padding: 2px 5px; border: 1px solid var(--border); border-radius: 4px; background: var(--hover); color: var(--text-muted); font: 9px ui-monospace,monospace; }.command-results { max-height: 420px; overflow-y: auto; padding: 9px; }.command-label { padding: 8px 9px 6px; color: var(--text-muted); font-size: 9px; font-weight: 700; }.command-results button { width: 100%; display: grid; grid-template-columns: 38px 1fr auto 18px; align-items: center; gap: 10px; padding: 10px; border: 0; border-radius: 6px; background: transparent; color: var(--text); text-align: left; cursor: pointer; }.command-results button.active { background: var(--hover); }.command-results button > span:nth-child(2),.command-results button strong,.command-results button small { display: block; }.command-results button strong { font-size: 12px; }.command-results button small { margin-top: 3px; color: var(--text-muted); font-size: 9px; }.command-results button > kbd { color: var(--text-muted); font: 8px ui-monospace,monospace; }.command-results button > .el-icon { color: var(--text-muted); }.command-icon { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 6px; }.command-icon.teal { background: var(--blue-light); color: var(--blue); }.command-icon.green { background: #e8f6ee; color: #23845c; }.command-icon.coral { background: #fff0ec; color: var(--accent); }.command-icon.amber { background: #fff5df; color: #b87813; }.command-icon.blue { background: #ebf3ff; color: #367bc7; }.command-icon.gray { background: var(--hover); color: var(--text-secondary); }.command-empty { display: grid; min-height: 140px; place-items: center; color: var(--text-muted); font-size: 11px; }.command-foot { display: flex; gap: 16px; padding: 9px 17px; border-top: 1px solid var(--border); color: var(--text-muted); font-size: 9px; }.command-foot span { display: flex; align-items: center; gap: 4px; }
 </style>
