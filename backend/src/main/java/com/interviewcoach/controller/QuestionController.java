@@ -3,6 +3,7 @@ package com.interviewcoach.controller;
 import com.interviewcoach.dto.Result;
 import com.interviewcoach.entity.Question;
 import com.interviewcoach.service.QuestionService;
+import com.interviewcoach.service.QuestionProgressService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,6 +15,27 @@ import java.util.Map;
 public class QuestionController {
 
     private final QuestionService questionService;
+    private final QuestionProgressService questionProgressService;
+
+    @GetMapping("/progress")
+    public Result<Map<String, Object>> progress(@RequestAttribute("userId") Long userId) {
+        return Result.ok(Map.of(
+                "records", questionProgressService.listByUser(userId),
+                "stats", questionProgressService.stats(userId)
+        ));
+    }
+
+    @PostMapping("/{id}/progress")
+    public Result<?> recordProgress(@PathVariable Long id,
+                                    @RequestBody Map<String, String> body,
+                                    @RequestAttribute("userId") Long userId) {
+        String status = body.get("status");
+        if (!java.util.Set.of("review", "mastered").contains(status)) {
+            return Result.badRequest("练习状态无效");
+        }
+        var progress = questionProgressService.record(userId, id, status);
+        return progress == null ? Result.fail(404, "题目不存在或无权限访问") : Result.ok(progress);
+    }
 
     /**
      * 获取题目列表（支持搜索 + 分类 + 难度 + 分页）

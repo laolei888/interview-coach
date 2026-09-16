@@ -26,6 +26,12 @@
       </div>
     </section>
 
+    <section class="practice-overview">
+      <div><span>已练习</span><strong>{{ progressStats.practiced }}</strong></div><div><span>已掌握</span><strong>{{ progressStats.mastered }}</strong></div><div><span>待复习</span><strong>{{ progressStats.review }}</strong></div>
+      <div class="mastery"><span>当前掌握率</span><strong>{{ masteryRate }}%</strong><i><b :style="{ width: masteryRate + '%' }"></b></i></div>
+      <el-button type="primary" :icon="VideoPlay" :disabled="!questions.length" @click="startPractice">开始专注练习</el-button>
+    </section>
+
     <div class="result-bar">
       <span>共 {{ total }} 道可见题目</span>
       <span v-if="activeFilters">已应用筛选条件</span>
@@ -44,6 +50,7 @@
               <span class="category">{{ item.category }}</span>
               <el-tag :type="difficultyType(item.difficulty)" size="small" effect="plain">{{ item.difficulty }}</el-tag>
               <span class="source-label">{{ item.userId ? '我的题目' : '公共题' }}</span>
+              <span v-if="progressMap[item.id]" :class="['progress-label', progressMap[item.id].status]">{{ progressMap[item.id].status === 'mastered' ? '已掌握' : '待复习' }}</span>
               <el-dropdown v-if="item.userId" trigger="click" class="item-menu" @command="handleCommand($event, item)">
                 <el-button text circle :icon="MoreFilled" aria-label="题目操作" />
                 <template #dropdown>
@@ -101,12 +108,24 @@
         <el-button type="primary" :loading="generating" :icon="MagicStick" @click="generateQuestions">开始生成</el-button>
       </template>
     </el-dialog>
+
+    <el-drawer v-model="practiceVisible" size="min(680px, 100%)" direction="rtl" destroy-on-close>
+      <template #header><div class="practice-title"><span>专注练习</span><small>{{ practiceIndex + 1 }} / {{ practiceQueue.length }}</small></div></template>
+      <div v-if="currentPractice" class="focus-practice">
+        <div class="focus-meta"><span>{{ currentPractice.category }}</span><el-tag :type="difficultyType(currentPractice.difficulty)" effect="plain">{{ currentPractice.difficulty }}</el-tag><small>已练 {{ progressMap[currentPractice.id]?.practiceCount || 0 }} 次</small></div>
+        <h2>{{ currentPractice.question }}</h2>
+        <div v-if="!practiceAnswerVisible" class="thinking-panel"><el-icon><EditPen /></el-icon><p>先在心里或纸上组织回答，再查看参考答案。</p><el-button type="primary" plain @click="practiceAnswerVisible = true">查看参考答案</el-button></div>
+        <div v-else class="focus-answer"><span>参考答案</span><article v-html="renderMarkdown(currentPractice.answer || '暂无参考答案')"></article></div>
+        <div v-if="practiceAnswerVisible" class="practice-actions"><el-button :icon="RefreshLeft" @click="ratePractice('review')">稍后复习</el-button><el-button type="primary" :icon="CircleCheck" @click="ratePractice('mastered')">已经掌握</el-button></div>
+      </div>
+      <el-result v-else icon="success" title="本轮练习完成" :sub-title="`已完成 ${practiceQueue.length} 道题，可继续浏览题库或再来一轮。`"><template #extra><el-button type="primary" @click="startPractice">再练一轮</el-button></template></el-result>
+    </el-drawer>
   </main>
 </template>
 
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
-import { Delete, Edit, Hide, MagicStick, MoreFilled, Plus, Refresh, Search, View } from '@element-plus/icons-vue'
+import { CircleCheck, Delete, Edit, EditPen, Hide, MagicStick, MoreFilled, Plus, Refresh, RefreshLeft, Search, VideoPlay, View } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import api from '../api'
 import { renderMarkdown } from '../utils/markdown'
@@ -130,9 +149,17 @@ const editingId = ref(null)
 const saving = ref(false)
 const aiVisible = ref(false)
 const generating = ref(false)
+const progressMap = reactive({})
+const progressStats = reactive({ practiced: 0, mastered: 0, review: 0 })
+const practiceVisible = ref(false)
+const practiceQueue = ref([])
+const practiceIndex = ref(0)
+const practiceAnswerVisible = ref(false)
 const editor = reactive({ category: '', difficulty: '中等', question: '', answer: '' })
 const aiForm = reactive({ category: 'Java', difficulty: '中等', count: 3 })
 const activeFilters = computed(() => keyword.value || category.value || difficulty.value || source.value !== 'all')
+const masteryRate = computed(() => progressStats.practiced ? Math.round(progressStats.mastered / progressStats.practiced * 100) : 0)
+const currentPractice = computed(() => practiceQueue.value[practiceIndex.value] || null)
 
 async function load() {
   loading.value = true
@@ -159,6 +186,15 @@ function randomPractice() {
   const item = questions.value[Math.floor(Math.random() * questions.value.length)]
   expanded.value = new Set()
   document.getElementById(`question-${item.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+}
+
+async function loadProgress() {
+  try { const { data } = await api.get('/question/progress'); if (data.code === 200) { Object.keys(progressMap).forEach(key => delete progressMap[key]); data.data.records.forEach(item => { progressMap[item.questionId] = item }); Object.assign(progressStats, data.data.stats) } } catch { /* 页面仍可浏览题库 */ }
+}
+function startPractice() { practiceQueue.value = [...questions.value].sort(() => Math.random() - .5).slice(0, Math.min(5, questions.value.length)); practiceIndex.value = 0; practiceAnswerVisible.value = false; practiceVisible.value = true }
+async function ratePractice(status) {
+  try { const { data } = await api.post(`/question/${currentPractice.value.id}/progress`, { status }); if (data.code !== 200) throw new Error(data.message); await loadProgress(); practiceIndex.value += 1; practiceAnswerVisible.value = false }
+  catch (error) { ElMessage.error(error.response?.data?.message || error.message || '进度保存失败') }
 }
 
 function openCreate() {
@@ -218,7 +254,7 @@ async function generateQuestions() {
   finally { generating.value = false }
 }
 
-onMounted(load)
+onMounted(() => { load(); loadProgress() })
 </script>
 
 <style scoped>
@@ -233,6 +269,7 @@ onMounted(load)
 .filters :deep(.el-input) { width: 250px; }
 .filters :deep(.el-select) { width: 140px; }
 .result-bar { display: flex; justify-content: space-between; padding: 18px 2px 12px; color: var(--text-secondary, #697386); font-size: 13px; }
+.practice-overview { display: grid; grid-template-columns: repeat(3,100px) minmax(180px,1fr) auto; align-items: center; gap: 0; margin: 18px 0 4px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-card); }.practice-overview > div { padding: 14px 16px; border-right: 1px solid var(--border); }.practice-overview span,.practice-overview strong { display: block; }.practice-overview span { color: var(--text-muted); font-size: 10px; }.practice-overview strong { margin-top: 4px; color: var(--text); font-size: 19px; }.practice-overview > .el-button { margin: 0 16px; }.mastery i { display: block; height: 4px; margin-top: 8px; overflow: hidden; border-radius: 2px; background: var(--hover); }.mastery b { display: block; height: 100%; background: var(--success); }
 .question-area { min-height: 260px; }
 .question-list { border-top: 1px solid var(--border-color, #e6e9ef); }
 .question-card { display: grid; grid-template-columns: 54px minmax(0, 1fr); padding: 25px 4px; border-bottom: 1px solid var(--border-color, #e6e9ef); scroll-margin-top: 24px; }
@@ -241,6 +278,7 @@ onMounted(load)
 .meta-row { display: flex; align-items: center; min-height: 28px; gap: 9px; }
 .category { color: #1677ff; font-size: 13px; font-weight: 700; }
 .source-label { color: var(--text-secondary, #697386); font-size: 12px; }
+.progress-label { padding: 3px 7px; border-radius: 4px; font-size: 10px; }.progress-label.mastered { background: #e8f6ee; color: #23845c; }.progress-label.review { background: #fff2e8; color: #c86636; }
 .item-menu { margin-left: auto; }
 .question-content h2 { max-width: 850px; margin: 12px 0 15px; font-size: 17px; line-height: 1.7; letter-spacing: 0; }
 .answer-toggle { display: inline-flex; align-items: center; gap: 7px; padding: 0; border: 0; background: transparent; color: #1677ff; cursor: pointer; font: inherit; font-size: 13px; }
@@ -253,11 +291,13 @@ onMounted(load)
 .pagination-wrap { display: flex; justify-content: center; padding: 24px 0 8px; }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
 .field-hint { margin-left: 12px; color: var(--text-secondary, #7b8494); font-size: 12px; }
+.practice-title span,.practice-title small { display: block; }.practice-title span { color: var(--text); font-size: 17px; font-weight: 700; }.practice-title small { margin-top: 3px; color: var(--text-muted); font-size: 11px; }.focus-meta { display: flex; align-items: center; gap: 9px; }.focus-meta > span { color: var(--blue); font-size: 12px; font-weight: 700; }.focus-meta small { margin-left: auto; color: var(--text-muted); font-size: 10px; }.focus-practice > h2 { margin: 24px 0; color: var(--text); font-size: 22px; line-height: 1.65; }.thinking-panel { min-height: 260px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; border: 1px dashed var(--border); border-radius: 8px; background: var(--hover); text-align: center; }.thinking-panel > .el-icon { color: var(--blue); font-size: 30px; }.thinking-panel p { color: var(--text-muted); font-size: 12px; }.focus-answer { padding: 20px 22px; border-left: 3px solid var(--blue); background: var(--hover); }.focus-answer > span { color: var(--text-muted); font-size: 11px; font-weight: 700; }.focus-answer article { margin-top: 12px; color: var(--text); font-size: 13px; line-height: 1.85; }.practice-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px; }
 
 @media (max-width: 900px) {
   .filter-band { align-items: flex-start; flex-direction: column; }
   .filters { width: 100%; flex-wrap: wrap; justify-content: flex-start; }
   .filters :deep(.el-input) { flex: 1; min-width: 220px; }
+  .practice-overview { grid-template-columns: repeat(3,1fr); }.practice-overview .mastery { grid-column: 1 / 3; border-top: 1px solid var(--border); }.practice-overview > .el-button { grid-column: 3; grid-row: 2; }
 }
 @media (max-width: 600px) {
   .practice-page { padding-bottom: 8px; }
@@ -274,6 +314,7 @@ onMounted(load)
   .answer-panel { margin-left: -34px; padding: 17px 16px; }
   .form-grid { grid-template-columns: 1fr; gap: 0; }
   .field-hint { display: block; margin: 8px 0 0; }
+  .practice-overview { grid-template-columns: repeat(3,1fr); }.practice-overview > div { padding: 12px 10px; }.practice-overview .mastery { grid-column: 1 / -1; border-right: 0; }.practice-overview > .el-button { grid-column: 1 / -1; grid-row: auto; margin: 12px; }.focus-practice > h2 { font-size: 19px; }.practice-actions { display: grid; grid-template-columns: 1fr 1fr; }
   :deep(.el-dialog) { width: calc(100% - 24px) !important; }
 }
 </style>

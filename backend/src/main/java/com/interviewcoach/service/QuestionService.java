@@ -110,6 +110,12 @@ public class QuestionService extends ServiceImpl<QuestionMapper, Question> {
                 .last("LIMIT 1"));
     }
 
+    public boolean isVisible(Long questionId, Long userId) {
+        return count(new LambdaQueryWrapper<Question>()
+                .eq(Question::getId, questionId)
+                .and(w -> w.isNull(Question::getUserId).or().eq(Question::getUserId, userId))) > 0;
+    }
+
     public Question updateOwned(Long questionId, Long userId, Question input) {
         Question existing = getOwned(questionId, userId);
         if (existing == null) return null;
