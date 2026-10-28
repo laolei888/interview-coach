@@ -62,6 +62,12 @@ public class StatsController {
                 .limit(5)
                 .map(entry -> Map.<String, Object>of("name", entry.getKey(), "count", entry.getValue()))
                 .toList();
+        Map<String, Long> modeCounts = sessions.stream()
+                .collect(Collectors.groupingBy(item -> modeLabel(item.getInterviewMode()), Collectors.counting()));
+        List<Map<String, Object>> modeDistribution = modeCounts.entrySet().stream()
+                .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
+                .map(entry -> Map.<String, Object>of("name", entry.getKey(), "count", entry.getValue()))
+                .toList();
 
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("interviewCount", interviewCount);
@@ -73,6 +79,17 @@ public class StatsController {
         data.put("questionProgress", questionProgressService.stats(userId));
         data.put("weeklyTrend", weeklyTrend);
         data.put("positionDistribution", positionDistribution);
+        data.put("modeDistribution", modeDistribution);
+        data.put("interviewScores", interviewService.scoreAnalytics(userId));
         return Result.ok(data);
+    }
+
+    private String modeLabel(String value) {
+        return switch (value == null ? "" : value) {
+            case "behavioral" -> "行为面试";
+            case "system-design" -> "系统设计";
+            case "project" -> "项目复盘";
+            default -> "技术深挖";
+        };
     }
 }

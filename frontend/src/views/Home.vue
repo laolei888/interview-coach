@@ -1,153 +1,249 @@
 <template>
-  <main class="dashboard">
-    <template v-if="isLoggedIn">
-      <header class="dashboard-head">
-        <div><span class="eyebrow">训练驾驶舱</span><h1>{{ greeting }}，{{ userStore.username }}</h1><p>{{ todayText }} · 今天也向目标岗位靠近一点。</p></div>
-        <div class="head-status"><i></i><span>训练数据已同步</span></div>
-      </header>
+  <main class="home-page">
+    <DashboardWorkspace v-if="isLoggedIn" :user-name="userStore.username" />
 
-      <section class="focus-banner">
-        <div class="focus-copy"><span>今日优先任务</span><h2>{{ focusTitle }}</h2><p>{{ focusDescription }}</p><div><el-button type="primary" size="large" :icon="VideoPlay" @click="router.push(focusPath)">{{ focusAction }}</el-button><button type="button" @click="router.push('/history')">查看上次复盘<el-icon><ArrowRight /></el-icon></button></div></div>
-        <div class="readiness-score"><div class="readiness-ring" :style="{ '--score': readinessScore }"><span><strong>{{ readinessScore }}</strong><small>准备度</small></span></div><ul><li><span>面试完成</span><b>{{ stats.completedCount }} 场</b></li><li><span>简历表现</span><b>{{ stats.averageResumeScore || '--' }} 分</b></li><li><span>题库掌握</span><b>{{ questionMastery }}%</b></li></ul></div>
-      </section>
-
-      <section class="overview-grid" v-loading="loading">
-        <div class="metric"><span><el-icon><ChatDotRound /></el-icon>模拟面试</span><strong>{{ stats.interviewCount }}</strong><small>{{ stats.activeCount ? `${stats.activeCount} 场等待继续` : '当前没有未完成会话' }}</small></div>
-        <div class="metric"><span><el-icon><DocumentChecked /></el-icon>简历诊断</span><strong>{{ stats.resumeCount }}</strong><small>{{ stats.resumeCount ? `平均评分 ${stats.averageResumeScore || '--'}` : '尚未生成分析报告' }}</small></div>
-        <div class="metric"><span><el-icon><Collection /></el-icon>题目练习</span><strong>{{ stats.questionProgress.practiced }}</strong><small>{{ stats.questionProgress.review }} 道需要继续复习</small></div>
-        <div class="metric"><span><el-icon><CircleCheck /></el-icon>训练完成率</span><strong>{{ completionRate }}<small>%</small></strong><div class="progress-track"><i :style="{ width: completionRate + '%' }"></i></div></div>
-      </section>
-
-      <section class="main-grid">
-        <div class="panel trend-panel">
-          <div class="panel-head"><div><h2>近 7 天训练趋势</h2><p>每日创建的模拟面试场次</p></div><span class="trend-total">{{ weeklyTotal }} 次</span></div>
-          <div class="chart-wrap">
-            <svg viewBox="0 0 700 210" role="img" aria-label="近七天面试趋势图">
-              <line v-for="y in [35, 85, 135, 185]" :key="y" x1="35" :y1="y" x2="675" :y2="y" class="grid-line" />
-              <path :d="areaPath" class="chart-area" />
-              <polyline :points="linePoints" class="chart-line" />
-              <circle v-for="point in chartPoints" :key="point.date" :cx="point.x" :cy="point.y" r="5" class="chart-dot"><title>{{ point.date }}：{{ point.count }} 次</title></circle>
-            </svg>
-            <div class="chart-labels"><span v-for="item in stats.weeklyTrend" :key="item.date">{{ item.date }}</span></div>
-          </div>
-          <div v-if="weeklyTotal === 0" class="chart-empty">本周还没有训练记录，从一次模拟面试开始。</div>
+    <div v-else class="landing-page">
+      <section class="landing-hero">
+        <div class="landing-copy">
+          <div class="landing-kicker"><i></i><span>AI CAREER STUDIO</span><b>FOR TECH CANDIDATES</b></div>
+          <h1>把“准备好了”<br /><em>变成有证据。</em></h1>
+          <p>从简历诊断到模拟面试，再到逐题复盘，一个工作台完成一次完整的求职训练。</p>
+          <div class="landing-actions"><el-button type="primary" size="large" @click="router.push('/login')">开始第一次训练<el-icon><ArrowRight /></el-icon></el-button><button type="button" @click="scrollToCapabilities"><span>01</span>先了解训练方式</button></div>
+          <div class="landing-proof"><div><strong>3</strong><span>训练模块</span></div><div><strong>10/10</strong><span>逐题反馈</span></div><div><strong>1</strong><span>训练档案</span></div></div>
         </div>
 
-        <aside class="panel plan-panel">
-          <div class="panel-head"><div><h2>今日训练计划</h2><p>根据当前数据动态推荐</p></div></div>
-          <div class="plan-list">
-            <button type="button" @click="router.push('/interview')"><span class="plan-icon blue"><el-icon><ChatDotRound /></el-icon></span><span><strong>{{ stats.activeCount ? '继续未完成面试' : '完成一场岗位面试' }}</strong><small>{{ stats.activeCount ? `${stats.activeCount} 场会话等待继续` : '建议训练 20-30 分钟' }}</small></span><el-icon><ArrowRight /></el-icon></button>
-            <button type="button" @click="router.push('/questions')"><span class="plan-icon green"><el-icon><Collection /></el-icon></span><span><strong>完成知识点热身</strong><small>从题库随机练习 5 道题</small></span><el-icon><ArrowRight /></el-icon></button>
-            <button type="button" @click="router.push('/resume')"><span class="plan-icon amber"><el-icon><DocumentChecked /></el-icon></span><span><strong>{{ stats.resumeCount ? '回顾简历诊断' : '完成首次简历诊断' }}</strong><small>{{ stats.resumeCount ? `当前平均 ${stats.averageResumeScore || '--'} 分` : '发现表达和结构问题' }}</small></span><el-icon><ArrowRight /></el-icon></button>
+        <div class="landing-stage" id="studio-preview">
+          <InterviewOrbScene class="stage-orb" />
+          <div class="stage-window" aria-label="训练驾驶舱预览">
+            <div class="stage-bar"><span><i></i><i></i><i></i></span><small>INTERVIEW COACH / WORKSPACE</small><b>LIVE PREVIEW</b></div>
+            <div class="stage-body">
+              <aside class="stage-rail"><strong>IC</strong><span class="active">总览</span><span>面试</span><span>题库</span><span>复盘</span><i></i><span>设置</span></aside>
+              <div class="stage-dashboard">
+                <div class="stage-head"><div><small>WED · 18 SEP</small><strong>今天练什么？</strong></div><span>U</span></div>
+                <div class="stage-priority"><div><small>建议优先</small><strong>完成一场技术深挖</strong><p>根据你的训练数据，下一步从回答深度开始。</p></div><b>↗</b></div>
+                <div class="stage-metrics"><div><small>准备度</small><strong>78<em>/100</em></strong><span>↑ 8.6</span></div><div><small>本周训练</small><strong>06<em> 次</em></strong><span>目标 08 次</span></div></div>
+                <div class="stage-insight"><div><span>回答表现</span><strong>最近 6 次回答</strong></div><div class="stage-bars"><i style="height:42%"></i><i style="height:58%"></i><i style="height:48%"></i><i style="height:72%"></i><i style="height:66%"></i><i style="height:84%"></i></div><small><span>较弱</span><span>最近一次</span></small></div>
+              </div>
+            </div>
           </div>
-        </aside>
-      </section>
-
-      <section class="lower-grid">
-        <div class="panel recent-panel">
-          <div class="panel-head"><div><h2>最近训练</h2><p>继续会话或进入历史复盘</p></div><el-button text @click="router.push('/history')">全部记录</el-button></div>
-          <div v-if="recentSessions.length" class="recent-list">
-            <button v-for="item in recentSessions" :key="item.id" type="button" @click="openSession(item)"><span class="recent-icon"><el-icon><ChatLineRound /></el-icon></span><span class="recent-main"><strong>{{ item.position }}</strong><small>{{ formatDate(item.createdAt) }}</small></span><el-tag :type="item.status === 'completed' ? 'success' : 'warning'" size="small" effect="plain">{{ item.status === 'completed' ? '已完成' : '进行中' }}</el-tag><el-icon class="row-arrow"><ArrowRight /></el-icon></button>
-          </div>
-          <div v-else class="empty-line">暂无面试记录</div>
-        </div>
-
-        <div class="panel distribution-panel">
-          <div class="panel-head"><div><h2>岗位训练分布</h2><p>你的练习重心</p></div></div>
-          <div v-if="stats.positionDistribution.length" class="distribution-list">
-            <div v-for="item in stats.positionDistribution" :key="item.name"><div><span>{{ item.name }}</span><strong>{{ item.count }}</strong></div><div class="bar"><i :style="{ width: distributionWidth(item.count) }"></i></div></div>
-          </div>
-          <div v-else class="empty-line">完成面试后生成岗位分布</div>
+          <div class="stage-caption"><i></i>你的训练档案，会记住每一次进步</div>
         </div>
       </section>
-    </template>
 
-    <template v-else>
-      <section class="guest-hero">
-        <div class="hero-content">
-          <span class="eyebrow">面向技术岗位的 AI 求职训练平台</span>
-          <h1>把每次准备，变成看得见的进步</h1>
-          <p>岗位定向简历诊断、实时模拟面试与逐题复盘，帮你从“刷过题”走到“讲得清”。</p>
-          <div class="hero-actions"><el-button type="primary" size="large" @click="router.push('/login')">开始训练<el-icon><ArrowRight /></el-icon></el-button><button type="button" @click="scrollToCapabilities">查看能力</button></div>
-          <div class="trust-row"><span><el-icon><CircleCheck /></el-icon> 数据按用户隔离</span><span><el-icon><CircleCheck /></el-icon> 报告可导出</span><span><el-icon><CircleCheck /></el-icon> 支持手机端</span></div>
-        </div>
+      <section class="landing-strip"><span>一个流程，三个动作</span><div><strong>定位</strong><small>找到岗位要求</small></div><i></i><div><strong>练习</strong><small>在真实对话中验证</small></div><i></i><div><strong>复盘</strong><small>把反馈变成下一步</small></div></section>
+
+      <section id="capabilities" class="landing-features">
+        <div class="landing-section-head"><span>WHY IT WORKS</span><h2>把准备拆小，<em>把反馈做深。</em></h2><p>不再把时间花在漫无目的地刷题上。每一次训练都有上下文、有评分，也有明确的下一步。</p></div>
+        <div class="landing-feature-grid"><article><div class="feature-number">01</div><el-icon><DocumentChecked /></el-icon><h3>岗位定向诊断</h3><p>结合目标岗位与 JD，识别关键词缺口、项目证据和最值得先补的能力。</p><button type="button" @click="router.push('/login')">从简历开始<el-icon><ArrowRight /></el-icon></button></article><article><div class="feature-number">02</div><el-icon><ChatDotRound /></el-icon><h3>真实对话训练</h3><p>选择面试场景和难度，接受连续追问，把“我会”变成能讲清楚的回答。</p><button type="button" @click="router.push('/login')">进入模拟面试<el-icon><ArrowRight /></el-icon></button></article><article><div class="feature-number">03</div><el-icon><DataAnalysis /></el-icon><h3>结构化复盘</h3><p>查看逐题评分、表现趋势和低分回答，把每份报告转成下一轮训练计划。</p><button type="button" @click="router.push('/login')">查看复盘方式<el-icon><ArrowRight /></el-icon></button></article></div>
       </section>
-      <section id="capabilities" class="capability-band">
-        <div><span>01</span><h2>岗位定向诊断</h2><p>结合目标岗位与 JD，检查 ATS 关键词、能力缺口和项目证据。</p></div>
-        <div><span>02</span><h2>真实对话训练</h2><p>保留完整面试上下文，每道回答即时评分并继续追问。</p></div>
-        <div><span>03</span><h2>结构化复盘</h2><p>从表现趋势到逐题记录，把模糊感受转成下一步行动。</p></div>
-      </section>
-    </template>
+
+      <section id="workflow" class="landing-method"><div class="method-heading"><span>THE METHOD</span><h2>每次只推进<br /><em>最重要的一步。</em></h2></div><div class="method-list"><div><strong>01</strong><p><b>先知道自己缺什么</b><small>简历和岗位要求放在同一个上下文里，减少无效准备。</small></p><el-icon><ArrowRight /></el-icon></div><div><strong>02</strong><p><b>再练习如何讲出来</b><small>AI 面试官会根据你的回答继续追问，而不是只给固定题目。</small></p><el-icon><ArrowRight /></el-icon></div><div><strong>03</strong><p><b>最后决定下一次练什么</b><small>低分回答、薄弱题目和训练趋势都会留在你的档案里。</small></p><el-icon><ArrowRight /></el-icon></div></div></section>
+      <section id="proof" class="landing-end"><div><span>START WITH ONE ANSWER</span><h2>先回答一个问题，<br /><em>再让数据告诉你下一步。</em></h2></div><el-button type="primary" size="large" @click="router.push('/login')">建立我的训练档案<el-icon><ArrowRight /></el-icon></el-button></section>
+    </div>
   </main>
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { ArrowRight, ChatDotRound, ChatLineRound, CircleCheck, Collection, DocumentChecked, VideoPlay } from '@element-plus/icons-vue'
-import api, { getSessions } from '../api'
+import { ArrowRight, ChatDotRound, DataAnalysis, DocumentChecked } from '@element-plus/icons-vue'
 import { useUserStore } from '../stores/user'
+import DashboardWorkspace from '../components/DashboardWorkspace.vue'
+import InterviewOrbScene from '../components/InterviewOrbScene.vue'
 
-const router = useRouter(); const userStore = useUserStore(); const isLoggedIn = userStore.isLoggedIn()
-const loading = ref(false); const recentSessions = ref([])
-const stats = reactive({ interviewCount: 0, completedCount: 0, activeCount: 0, resumeCount: 0, averageResumeScore: 0, questionCount: 0, questionProgress: { practiced: 0, mastered: 0, review: 0 }, weeklyTrend: [], positionDistribution: [] })
-const greeting = computed(() => new Date().getHours() < 12 ? '早上好' : new Date().getHours() < 18 ? '下午好' : '晚上好')
-const todayText = computed(() => new Date().toLocaleDateString('zh-CN', { month: 'long', day: 'numeric', weekday: 'long' }))
-const completionRate = computed(() => stats.interviewCount ? Math.round(stats.completedCount / stats.interviewCount * 100) : 0)
-const weeklyTotal = computed(() => stats.weeklyTrend.reduce((sum, item) => sum + Number(item.count), 0))
-const questionMastery = computed(() => stats.questionProgress.practiced ? Math.round(stats.questionProgress.mastered / stats.questionProgress.practiced * 100) : 0)
-const readinessScore = computed(() => Math.round(Math.min(100, completionRate.value * .35 + (stats.averageResumeScore || 0) * .35 + questionMastery.value * .3)))
-const focusTitle = computed(() => stats.activeCount ? '完成正在进行的模拟面试' : !stats.resumeCount ? '先完成一次岗位定向简历诊断' : stats.questionProgress.review ? `复习 ${stats.questionProgress.review} 道薄弱题目` : '开始一场目标岗位模拟面试')
-const focusDescription = computed(() => stats.activeCount ? '保持回答上下文，完成后会生成结构化能力评估。' : !stats.resumeCount ? '上传简历和目标 JD，先明确本轮求职准备的重点。' : stats.questionProgress.review ? '集中处理标记为待复习的知识点，建立稳定表达。' : '用一次完整对话检查技术深度、表达结构和追问应对。')
-const focusPath = computed(() => stats.activeCount ? '/interview' : !stats.resumeCount ? '/resume' : stats.questionProgress.review ? '/questions' : '/interview')
-const focusAction = computed(() => stats.activeCount ? '继续面试' : !stats.resumeCount ? '分析简历' : stats.questionProgress.review ? '开始复习' : '开始面试')
-const chartPoints = computed(() => {
-  const max = Math.max(1, ...stats.weeklyTrend.map(item => Number(item.count)))
-  return stats.weeklyTrend.map((item, index) => ({ ...item, x: 45 + index * 103, y: 185 - Number(item.count) / max * 135 }))
-})
-const linePoints = computed(() => chartPoints.value.map(item => `${item.x},${item.y}`).join(' '))
-const areaPath = computed(() => chartPoints.value.length ? `M ${chartPoints.value[0].x} 185 L ${linePoints.value.replaceAll(' ', ' L ')} L ${chartPoints.value.at(-1).x} 185 Z` : '')
-
-onMounted(async () => {
-  if (!isLoggedIn) return
-  loading.value = true
-  try {
-    const [statsRes, sessionsRes] = await Promise.all([api.get('/stats/dashboard'), getSessions()])
-    if (statsRes.data.code === 200) Object.assign(stats, statsRes.data.data)
-    if (sessionsRes.data.code === 200) recentSessions.value = sessionsRes.data.data.slice(0, 4)
-  } finally { loading.value = false }
-})
-const openSession = item => item.status === 'completed' ? router.push('/history') : router.push({ path: '/interview', query: { sessionId: item.id } })
-const distributionWidth = count => `${Math.max(8, count / Math.max(1, ...stats.positionDistribution.map(item => item.count)) * 100)}%`
-const formatDate = value => value ? new Date(value).toLocaleString('zh-CN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''
+const router = useRouter()
+const userStore = useUserStore()
+// 登录状态需要保持响应式：用户登录/退出后，首页应立即在访客落地页与训练工作台之间切换。
+const isLoggedIn = computed(() => userStore.isLoggedIn())
 const scrollToCapabilities = () => document.querySelector('#capabilities')?.scrollIntoView({ behavior: 'smooth' })
 </script>
 
 <style scoped>
-.dashboard { max-width: 1260px; margin: 0 auto; color: var(--text); }
-.dashboard-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; padding: 10px 0 24px; }
-.eyebrow { display: block; margin-bottom: 7px; color: var(--blue); font-size: 12px; font-weight: 700; }
-.dashboard-head h1 { margin-bottom: 7px; font-size: 32px; letter-spacing: 0; }.dashboard-head p { color: var(--text-muted); font-size: 13px; }.head-status { display: flex; align-items: center; gap: 8px; color: var(--text-muted); font-size: 10px; }.head-status i { width: 7px; height: 7px; border-radius: 50%; background: var(--success); box-shadow: 0 0 0 4px color-mix(in srgb, var(--success) 14%, transparent); }
-.focus-banner { min-height: 258px; display: grid; grid-template-columns: 1fr 390px; align-items: center; gap: 40px; margin-bottom: 16px; padding: 34px 38px; border-radius: 8px; position: relative; overflow: hidden; background: #172724; color: #fff; }.focus-banner::after { content: ''; position: absolute; inset: 0 0 0 62%; background: url('https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=900&q=80') center/cover; opacity: .12; }.focus-copy,.readiness-score { position: relative; z-index: 1; }.focus-copy > span { color: #82cfc4; font-size: 10px; font-weight: 700; }.focus-copy h2 { max-width: 600px; margin: 10px 0 9px; font-size: 27px; }.focus-copy > p { max-width: 620px; color: rgba(255,255,255,.62); font-size: 12px; line-height: 1.7; }.focus-copy > div { display: flex; align-items: center; gap: 18px; margin-top: 24px; }.focus-copy > div > button:not(.el-button) { display: flex; align-items: center; gap: 5px; border: 0; background: transparent; color: rgba(255,255,255,.68); cursor: pointer; font: inherit; font-size: 11px; }.readiness-score { display: flex; align-items: center; justify-content: flex-end; gap: 28px; }.readiness-ring { --score: 0; width: 132px; height: 132px; display: grid; flex: 0 0 132px; place-items: center; border-radius: 50%; background: conic-gradient(#62c8ba calc(var(--score) * 1%), rgba(255,255,255,.1) 0); position: relative; }.readiness-ring::after { content: ''; position: absolute; inset: 10px; border-radius: 50%; background: #172724; }.readiness-ring span { position: relative; z-index: 1; text-align: center; }.readiness-ring strong,.readiness-ring small { display: block; }.readiness-ring strong { font-size: 34px; }.readiness-ring small { margin-top: 2px; color: rgba(255,255,255,.5); font-size: 9px; }.readiness-score ul { min-width: 120px; list-style: none; }.readiness-score li { padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,.1); }.readiness-score li:last-child { border: 0; }.readiness-score li span,.readiness-score li b { display: block; }.readiness-score li span { color: rgba(255,255,255,.45); font-size: 9px; }.readiness-score li b { margin-top: 3px; font-size: 12px; }
-.overview-grid { display: grid; grid-template-columns: repeat(4,1fr); min-height: 116px; margin-bottom: 16px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-card); }
-.overview-grid > div { padding: 19px 22px; border-right: 1px solid var(--border); }.overview-grid > div:last-child { border-right: 0; }
-.overview-grid span, .overview-grid small { color: var(--text-muted); font-size: 11px; }.overview-grid span { display: flex; align-items: center; gap: 6px; }.overview-grid span .el-icon { color: var(--blue); }.overview-grid strong { display: block; margin: 9px 0 4px; font-size: 26px; }.overview-grid strong small { display: inline; margin-left: 2px; font-size: 13px; }
-.progress-track { height: 5px; overflow: hidden; border-radius: 3px; background: var(--hover); }.progress-track i { display: block; height: 100%; border-radius: inherit; background: var(--blue); }
-.metric { display: flex; flex-direction: column; justify-content: center; }.metric strong { font-size: 28px; }
-.main-grid { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(300px, .85fr); gap: 16px; margin-bottom: 16px; }.lower-grid { display: grid; grid-template-columns: 1.35fr 1fr; gap: 16px; }
-.panel { border: 1px solid var(--border); border-radius: 8px; background: var(--bg-card); overflow: hidden; }.panel-head { display: flex; align-items: center; justify-content: space-between; padding: 18px 20px; border-bottom: 1px solid var(--border); }.panel-head h2 { margin-bottom: 4px; font-size: 15px; }.panel-head p { color: var(--text-muted); font-size: 11px; }.trend-total { color: var(--blue); font-size: 13px; font-weight: 700; }
-.chart-wrap { position: relative; padding: 14px 18px 10px; }.chart-wrap svg { display: block; width: 100%; height: 210px; overflow: visible; }.grid-line { stroke: var(--border); stroke-width: 1; }.chart-line { fill: none; stroke: var(--blue); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }.chart-area { fill: var(--blue-light); opacity: .65; }.chart-dot { fill: var(--bg-card); stroke: var(--blue); stroke-width: 3; }.chart-labels { display: grid; grid-template-columns: repeat(7, 1fr); padding: 0 8px; color: var(--text-muted); font-size: 10px; text-align: center; }.chart-empty { padding: 0 20px 18px; color: var(--text-muted); font-size: 12px; text-align: center; }
-.plan-list button, .recent-list button { width: 100%; display: flex; align-items: center; gap: 12px; padding: 15px 18px; border: 0; border-bottom: 1px solid var(--border); background: transparent; color: var(--text); text-align: left; cursor: pointer; }.plan-list button:last-child, .recent-list button:last-child { border-bottom: 0; }.plan-list button:hover, .recent-list button:hover { background: var(--hover); }.plan-list button > span:nth-child(2), .recent-main { min-width: 0; flex: 1; }.plan-list strong, .plan-list small, .recent-main strong, .recent-main small { display: block; }.plan-list strong, .recent-main strong { font-size: 13px; }.plan-list small, .recent-main small { margin-top: 4px; color: var(--text-muted); font-size: 11px; }
-.plan-icon, .recent-icon { width: 36px; height: 36px; display: grid; flex: 0 0 36px; place-items: center; border-radius: 7px; }.plan-icon.blue { color: #1677ff; background: #eaf3ff; }.plan-icon.green { color: #289b62; background: #e9f7ef; }.plan-icon.amber { color: #c78517; background: #fff4df; }.recent-icon { color: var(--text-secondary); background: var(--hover); }.row-arrow { color: var(--text-muted); }
-.distribution-list { padding: 16px 20px 20px; }.distribution-list > div { margin-bottom: 15px; }.distribution-list > div:last-child { margin-bottom: 0; }.distribution-list > div > div:first-child { display: flex; justify-content: space-between; margin-bottom: 7px; font-size: 12px; }.distribution-list strong { color: var(--text-muted); }.bar { height: 6px; overflow: hidden; border-radius: 3px; background: var(--hover); }.bar i { display: block; height: 100%; border-radius: inherit; background: #36a269; }.empty-line { min-height: 155px; display: grid; place-items: center; color: var(--text-muted); font-size: 12px; }
-.guest-hero { min-height: min(720px, calc(100vh - 56px)); display: flex; align-items: center; max-width: 100%; margin: 0; padding: 70px max(42px, calc((100vw - 1180px) / 2)) 96px; position: relative; isolation: isolate; background: #eef2f2 url('https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=1800&q=88') right center/cover no-repeat; background-blend-mode: screen; }
-.guest-hero::after { content: ''; position: absolute; inset: 0 42% 0 0; z-index: -1; background: rgba(244,246,248,.92); }
-:global(html.dark) .guest-hero { background-color: #111716; background-blend-mode: multiply; }
-:global(html.dark) .guest-hero::after { background: rgba(17,23,22,.9); }
-.hero-content { max-width: 650px; }.hero-content h1 { max-width: 620px; margin: 12px 0 20px; font-size: clamp(42px, 5vw, 68px); line-height: 1.06; font-weight: 800; }.hero-content > p { max-width: 590px; color: var(--text-secondary); font-size: 17px; line-height: 1.8; }.hero-actions { display: flex; align-items: center; gap: 18px; margin: 30px 0 24px; }.hero-actions > button:not(.el-button) { border: 0; background: transparent; color: var(--text-secondary); font: inherit; font-size: 14px; cursor: pointer; }.trust-row { display: flex; flex-wrap: wrap; gap: 18px; color: var(--text-muted); font-size: 12px; }.trust-row span { display: flex; align-items: center; gap: 5px; }.trust-row .el-icon { color: var(--success); }
-.capability-band { display: grid; grid-template-columns: repeat(3,1fr); max-width: 1180px; margin: 0 auto 60px; border-top: 1px solid var(--border); }.capability-band > div { padding: 30px 32px; border-right: 1px solid var(--border); }.capability-band > div:last-child { border: 0; }.capability-band span { color: var(--accent); font-size: 11px; font-weight: 800; }.capability-band h2 { margin: 10px 0 8px; font-size: 17px; }.capability-band p { color: var(--text-muted); font-size: 12px; line-height: 1.7; }
-@media (max-width: 1050px) { .focus-banner { grid-template-columns: 1fr 310px; }.readiness-score { gap: 18px; }.readiness-ring { width: 110px; height: 110px; flex-basis: 110px; } }
-@media (max-width: 900px) { .focus-banner { grid-template-columns: 1fr; }.readiness-score { justify-content: flex-start; }.readiness-score ul { display: flex; gap: 25px; }.readiness-score li { border: 0; }.overview-grid { grid-template-columns: repeat(2, 1fr); }.overview-grid > div:nth-child(2) { border-right: 0; }.overview-grid > div:nth-child(-n+2) { border-bottom: 1px solid var(--border); }.main-grid, .lower-grid { grid-template-columns: 1fr; } }
-@media (max-width: 820px) { .guest-hero { min-height: auto; padding: 58px 22px 54px; background-position: 62% center; }.guest-hero::after { inset: 0; background: rgba(244,246,248,.82); }:global(html.dark) .guest-hero::after { background: rgba(17,23,22,.84); }.hero-content h1 { font-size: 43px; }.capability-band { grid-template-columns: 1fr; margin: 0 22px 42px; }.capability-band > div { padding: 24px 0; border-right: 0; border-bottom: 1px solid var(--border); } }
-@media (max-width: 600px) { .dashboard { width: 100%; padding: 0 2px; }.dashboard-head { align-items: flex-start; flex-direction: column; }.dashboard-head h1 { font-size: 25px; }.head-status { display: none; }.focus-banner { min-height: 0; padding: 26px 22px; }.focus-copy h2 { font-size: 22px; }.focus-copy > div { align-items: flex-start; flex-direction: column; gap: 12px; }.readiness-score { align-items: flex-start; }.readiness-ring { width: 92px; height: 92px; flex-basis: 92px; }.readiness-ring strong { font-size: 27px; }.readiness-score ul { display: block; }.readiness-score li { padding: 4px 0 8px; }.overview-grid > div { padding: 16px 14px; }.overview-grid strong { font-size: 23px; }.chart-wrap { padding: 8px 4px; overflow-x: auto; }.chart-wrap svg { min-width: 620px; }.chart-labels { min-width: 620px; }.guest-hero { padding: 42px 16px 46px; }.hero-content h1 { font-size: 36px; }.hero-content > p { font-size: 15px; }.trust-row { gap: 10px 14px; }.capability-band { margin-inline: 16px; } }
+.home-page { max-width: 1280px; margin: 0 auto; color: var(--text); }
+.landing-page { max-width: 1220px; margin: 0 auto; padding: 0 28px 72px; }.landing-hero { min-height: 650px; display: grid; grid-template-columns: minmax(0,.82fr) minmax(500px,1.18fr); align-items: center; gap: clamp(38px,6vw,88px); padding: 72px 0 58px; }.landing-copy { position: relative; z-index: 2; }.landing-kicker { display: flex; align-items: center; gap: 9px; color: var(--blue); font: 800 10px ui-monospace,monospace; letter-spacing: .08em; }.landing-kicker i { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent) 15%, transparent); }.landing-kicker b { margin-left: 4px; color: var(--text-muted); font-size: 9px; font-weight: 500; letter-spacing: .03em; }.landing-copy h1 { max-width: 610px; margin: 22px 0 20px; color: var(--text); font-size: clamp(50px,6vw,78px); line-height: 1.03; letter-spacing: -.075em; }.landing-copy h1 em { color: var(--blue); font-style: normal; }.landing-copy > p { max-width: 460px; color: var(--text-secondary); font-size: 15px; line-height: 1.9; }.landing-actions { display: flex; align-items: center; gap: 22px; margin-top: 32px; }.landing-actions .el-button { height: 46px; padding-inline: 20px; border-radius: 7px; font-weight: 700; }.landing-actions > button { display: flex; align-items: center; gap: 8px; border: 0; background: transparent; color: var(--text-secondary); cursor: pointer; font-size: 12px; }.landing-actions > button span { display: grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border); border-radius: 50%; color: var(--blue); font: 700 9px ui-monospace,monospace; }.landing-proof { display: flex; gap: 28px; margin-top: 52px; }.landing-proof > div { padding-left: 12px; border-left: 2px solid var(--border); }.landing-proof strong,.landing-proof span { display: block; }.landing-proof strong { color: var(--text); font: 700 20px ui-monospace,monospace; }.landing-proof span { margin-top: 4px; color: var(--text-muted); font-size: 10px; }
+.landing-stage { min-height: 500px; display: grid; place-items: center; position: relative; }.landing-stage::before { content: ''; position: absolute; width: 80%; height: 70%; border-radius: 50%; background: radial-gradient(circle, color-mix(in srgb, var(--blue) 17%, transparent), transparent 68%); filter: blur(18px); }.stage-orb { inset: 4% -8% 0 20%; opacity: .72; }.stage-window { width: min(100%,590px); position: relative; z-index: 1; overflow: hidden; border: 1px solid color-mix(in srgb, var(--blue) 28%, var(--border)); border-radius: 10px; background: var(--bg-card); box-shadow: 0 30px 70px rgba(23,32,42,.17); transform: rotate(1.4deg); }.stage-bar { display: flex; align-items: center; justify-content: space-between; height: 38px; padding: 0 14px; border-bottom: 1px solid var(--border); background: color-mix(in srgb, var(--bg-card) 86%, var(--blue-light)); }.stage-bar > span { display: flex; gap: 5px; }.stage-bar i { width: 7px; height: 7px; border-radius: 50%; background: var(--border); }.stage-bar i:first-child { background: #df694f; }.stage-bar i:nth-child(2) { background: #d6a44d; }.stage-bar i:nth-child(3) { background: #58b98b; }.stage-bar small { color: var(--text-muted); font: 8px ui-monospace,monospace; letter-spacing: .08em; }.stage-bar b { color: var(--success); font: 700 8px ui-monospace,monospace; letter-spacing: .04em; }.stage-body { display: grid; grid-template-columns: 58px 1fr; min-height: 380px; }.stage-rail { display: flex; flex-direction: column; align-items: center; gap: 9px; padding: 18px 8px; border-right: 1px solid var(--border); background: color-mix(in srgb, var(--bg-soft) 76%, transparent); }.stage-rail strong { display: grid; place-items: center; width: 27px; height: 27px; margin-bottom: 17px; border-radius: 7px; background: var(--blue); color: #fff; font: 800 10px ui-monospace,monospace; }.stage-rail span { width: 100%; padding: 7px 0; border-radius: 5px; color: var(--text-muted); font-size: 8px; text-align: center; }.stage-rail span.active { background: var(--blue-light); color: var(--blue); font-weight: 700; }.stage-rail i { flex: 1; }.stage-dashboard { padding: 23px 25px; background: linear-gradient(145deg,color-mix(in srgb,var(--blue-light) 20%,var(--bg-card)),var(--bg-card)); }.stage-head { display: flex; align-items: center; justify-content: space-between; }.stage-head small,.stage-head strong { display: block; }.stage-head small { color: var(--text-muted); font: 8px ui-monospace,monospace; letter-spacing: .1em; }.stage-head strong { margin-top: 7px; color: var(--text); font-size: 18px; }.stage-head > span { display: grid; place-items: center; width: 29px; height: 29px; border-radius: 50%; background: var(--text); color: var(--bg-card); font: 700 10px ui-monospace,monospace; }.stage-priority { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; margin-top: 22px; padding: 18px; border: 1px solid color-mix(in srgb,var(--blue) 20%,var(--border)); border-radius: 8px; background: var(--blue-light); }.stage-priority small { color: var(--blue); font-size: 9px; font-weight: 700; }.stage-priority strong { display: block; margin-top: 7px; color: var(--text); font-size: 14px; }.stage-priority p { margin-top: 5px; color: var(--text-secondary); font-size: 10px; line-height: 1.55; }.stage-priority > b { color: var(--blue); font-size: 20px; font-weight: 400; }.stage-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }.stage-metrics > div { padding: 14px; border: 1px solid var(--border); border-radius: 7px; background: var(--bg-card); }.stage-metrics small,.stage-metrics strong,.stage-metrics span { display: block; }.stage-metrics small { color: var(--text-muted); font-size: 9px; }.stage-metrics strong { margin: 6px 0 3px; color: var(--text); font: 700 24px ui-monospace,monospace; }.stage-metrics strong em { color: var(--text-muted); font-size: 10px; font-style: normal; }.stage-metrics span { color: var(--success); font: 700 9px ui-monospace,monospace; }.stage-insight { margin-top: 12px; padding: 15px; border: 1px solid var(--border); border-radius: 7px; background: var(--bg-card); }.stage-insight > div:first-child { display: flex; justify-content: space-between; }.stage-insight > div:first-child span { color: var(--text-muted); font-size: 9px; }.stage-insight > div:first-child strong { color: var(--text-secondary); font-size: 10px; }.stage-bars { display: flex; align-items: end; gap: 12px; height: 105px; margin-top: 14px; padding: 0 5px; border-bottom: 1px solid var(--border); }.stage-bars i { flex: 1; min-height: 10px; border-radius: 4px 4px 0 0; background: linear-gradient(180deg,var(--blue),color-mix(in srgb,var(--blue) 42%,transparent)); }.stage-bars i:nth-last-child(-n+2) { background: linear-gradient(180deg,var(--accent),color-mix(in srgb,var(--accent) 46%,transparent)); }.stage-insight > small { display: flex; justify-content: space-between; margin-top: 7px; color: var(--text-muted); font-size: 8px; }.stage-caption { display: flex; align-items: center; justify-content: center; gap: 6px; position: absolute; right: 0; bottom: 5px; color: var(--text-muted); font-size: 9px; }.stage-caption i { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); }
+.landing-strip { display: grid; grid-template-columns: 1.2fr 1fr 24px 1fr 24px 1fr; align-items: center; gap: 16px; padding: 18px 24px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-glass); }.landing-strip > span { color: var(--text-muted); font: 700 9px ui-monospace,monospace; letter-spacing: .08em; }.landing-strip > div strong,.landing-strip > div small { display: block; }.landing-strip > div strong { color: var(--text); font-size: 12px; }.landing-strip > div small { margin-top: 4px; color: var(--text-muted); font-size: 9px; }.landing-strip > i { width: 24px; height: 1px; background: var(--border); }
+.landing-features { padding: 112px 0 122px; }.landing-section-head { display: grid; grid-template-columns: .8fr 1fr 1fr; align-items: end; gap: 30px; margin-bottom: 38px; }.landing-section-head > span,.method-heading > span,.landing-end > div > span { color: var(--blue); font: 800 10px ui-monospace,monospace; letter-spacing: .08em; }.landing-section-head h2,.method-heading h2,.landing-end h2 { color: var(--text); font-size: clamp(30px,4vw,50px); line-height: 1.08; letter-spacing: -.05em; }.landing-section-head h2 em,.method-heading h2 em,.landing-end h2 em { color: var(--blue); font-style: normal; }.landing-section-head p { max-width: 330px; justify-self: end; color: var(--text-secondary); font-size: 13px; line-height: 1.8; }.landing-feature-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }.landing-feature-grid article { min-height: 270px; padding: 24px; border-top: 2px solid var(--border); transition: border-color .2s, transform .2s; }.landing-feature-grid article:hover { border-top-color: var(--blue); transform: translateY(-4px); }.feature-number { color: var(--text-muted); font: 700 10px ui-monospace,monospace; }.landing-feature-grid article > .el-icon { width: 40px; height: 40px; display: grid; place-items: center; margin: 25px 0 20px; border-radius: 8px; background: var(--blue-light); color: var(--blue); font-size: 20px; }.landing-feature-grid h3 { margin-bottom: 9px; color: var(--text); font-size: 17px; }.landing-feature-grid p { min-height: 67px; color: var(--text-secondary); font-size: 12px; line-height: 1.8; }.landing-feature-grid button { display: flex; align-items: center; gap: 5px; margin-top: 20px; border: 0; background: transparent; color: var(--blue); cursor: pointer; font-size: 11px; font-weight: 700; }
+.landing-method { display: grid; grid-template-columns: .8fr 1.2fr; gap: 70px; padding: 78px 54px; border-radius: 10px; background: #172724; color: #fff; }.landing-method .method-heading h2 { margin-top: 13px; color: #fff; }.landing-method .method-heading h2 em { color: #8ed3ca; }.method-list { border-top: 1px solid rgba(255,255,255,.15); }.method-list > div { display: grid; grid-template-columns: 42px 1fr 20px; align-items: center; gap: 16px; min-height: 94px; border-bottom: 1px solid rgba(255,255,255,.15); }.method-list > div > strong { color: #8ed3ca; font: 700 11px ui-monospace,monospace; }.method-list p b,.method-list p small { display: block; }.method-list p b { color: #fff; font-size: 14px; }.method-list p small { margin-top: 5px; color: rgba(255,255,255,.55); font-size: 11px; line-height: 1.5; }.method-list .el-icon { color: #8ed3ca; }.landing-end { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-top: 22px; padding: 30px 34px; border-radius: 9px; background: var(--blue-light); }.landing-end h2 { margin-top: 9px; font-size: clamp(25px,3vw,36px); }.landing-end .el-button { flex-shrink: 0; }
+@media (max-width: 1050px) { .landing-hero { grid-template-columns: 1fr; gap: 10px; padding-top: 55px; }.landing-copy { max-width: 650px; }.landing-stage { min-height: 500px; margin-top: 18px; }.landing-section-head { grid-template-columns: 1fr 1fr; }.landing-section-head p { grid-column: 2; }.landing-method { gap: 40px; } }
+@media (max-width: 760px) { .home-page { width: 100%; }.landing-page { padding: 0 16px 46px; }.landing-hero { min-height: 0; padding: 42px 0 28px; }.landing-copy h1 { margin-top: 18px; font-size: clamp(43px,12vw,64px); }.landing-copy > p { font-size: 14px; }.landing-kicker b { display: none; }.landing-actions { align-items: flex-start; flex-direction: column; gap: 16px; margin-top: 25px; }.landing-proof { gap: 18px; margin-top: 34px; }.landing-stage { min-height: 390px; margin: 12px -4px 0; }.stage-orb { display: none; }.stage-window { width: 100%; transform: none; }.stage-body { min-height: 330px; }.stage-dashboard { padding: 19px 15px; }.stage-priority { padding: 14px; }.stage-caption { right: 0; bottom: -2px; }.landing-strip { grid-template-columns: repeat(3,1fr); gap: 9px; padding: 16px; }.landing-strip > span { grid-column: 1 / -1; margin-bottom: 4px; }.landing-strip > i { display: none; }.landing-features { padding: 74px 0 76px; }.landing-section-head { display: block; }.landing-section-head h2 { margin: 13px 0 16px; font-size: 36px; }.landing-section-head p { max-width: 430px; }.landing-feature-grid { grid-template-columns: 1fr; gap: 26px; margin-top: 30px; }.landing-feature-grid article { min-height: 0; padding: 20px 0 0; }.landing-feature-grid article > .el-icon { margin: 19px 0 15px; }.landing-feature-grid p { min-height: 0; }.landing-method { display: block; padding: 48px 22px; }.method-list { margin-top: 35px; }.method-list > div { min-height: 104px; }.landing-end { align-items: flex-start; flex-direction: column; padding: 25px 22px; }.landing-end .el-button { width: 100%; } }
+@media (max-width: 430px) { .landing-proof { gap: 12px; }.landing-proof > div { padding-left: 8px; }.landing-proof strong { font-size: 17px; }.landing-proof span { font-size: 9px; }.stage-rail { padding-inline: 5px; }.stage-rail span { font-size: 7px; }.stage-head strong { font-size: 16px; }.stage-metrics strong { font-size: 21px; }.stage-bars { gap: 8px; } }
+/* ======== Editorial premium layer ======== */
+.landing-page { position: relative; }
+.landing-hero { position: relative; isolation: isolate; }
+.landing-hero::before {
+  content: '';
+  position: absolute;
+  inset: 34px -42px 16px;
+  z-index: -1;
+  border: 1px solid color-mix(in srgb, var(--blue) 15%, transparent);
+  border-radius: 34px;
+  background:
+    radial-gradient(circle at 79% 22%, color-mix(in srgb, var(--blue) 15%, transparent), transparent 28%),
+    linear-gradient(135deg, color-mix(in srgb, var(--blue-light) 30%, transparent), transparent 54%);
+  pointer-events: none;
+}
+.landing-copy h1 { text-shadow: 0 16px 36px color-mix(in srgb, var(--blue) 11%, transparent); }
+.landing-actions .el-button { border-radius: 12px; box-shadow: 0 15px 32px color-mix(in srgb, var(--blue) 24%, transparent); }
+.landing-actions .el-button:hover { box-shadow: 0 19px 38px color-mix(in srgb, var(--blue) 32%, transparent); }
+.landing-stage { min-height: 540px; }
+.landing-stage::before { width: 92%; height: 78%; filter: blur(28px); opacity: .9; }
+.stage-window {
+  border-radius: 20px;
+  border-color: color-mix(in srgb, var(--blue) 32%, var(--border));
+  box-shadow: 0 42px 100px rgba(16, 54, 47, .2), 0 0 0 8px color-mix(in srgb, var(--blue) 5%, transparent);
+  transform: rotate(1.1deg) translateY(-5px);
+}
+.stage-bar { height: 44px; padding-inline: 18px; background: color-mix(in srgb, var(--bg-card) 76%, var(--blue-light)); }
+.stage-bar i { width: 8px; height: 8px; }
+.stage-body { min-height: 410px; }
+.stage-rail { padding: 22px 10px; background: color-mix(in srgb, var(--bg-soft) 68%, transparent); }
+.stage-rail strong { width: 31px; height: 31px; border-radius: 10px; box-shadow: 0 8px 18px color-mix(in srgb, var(--blue) 22%, transparent); }
+.stage-rail span, .stage-metrics > div, .stage-insight, .stage-priority { border-radius: 12px; }
+.stage-dashboard { padding: 28px 29px; }
+.stage-priority { box-shadow: 0 12px 24px color-mix(in srgb, var(--blue) 9%, transparent); }
+.stage-metrics > div, .stage-insight { box-shadow: 0 10px 24px rgba(16, 54, 47, .045); }
+.stage-caption { bottom: -2px; padding: 7px 11px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface-glass); box-shadow: 0 10px 24px rgba(16, 54, 47, .06); backdrop-filter: blur(12px); }
+.landing-strip {
+  border-radius: 16px;
+  border-color: color-mix(in srgb, var(--blue) 15%, var(--border));
+  box-shadow: 0 22px 56px rgba(16, 54, 47, .07);
+  backdrop-filter: blur(18px);
+}
+.landing-strip > div { padding: 5px 0; }
+.landing-strip > i { background: color-mix(in srgb, var(--blue) 42%, var(--border)); }
+.landing-features { position: relative; }
+.landing-feature-grid { gap: 16px; }
+.landing-feature-grid article {
+  min-height: 292px;
+  border: 1px solid var(--border);
+  border-top: 2px solid color-mix(in srgb, var(--blue) 42%, var(--border));
+  border-radius: 16px;
+  background: var(--surface-glass);
+  box-shadow: 0 18px 46px rgba(16, 54, 47, .055);
+  backdrop-filter: blur(16px);
+  transition: border-color .22s, transform .22s, box-shadow .22s;
+}
+.landing-feature-grid article:hover {
+  border-top-color: var(--blue);
+  border-color: color-mix(in srgb, var(--blue) 32%, var(--border));
+  box-shadow: 0 26px 60px color-mix(in srgb, var(--blue) 12%, transparent);
+  transform: translateY(-7px);
+}
+.landing-feature-grid article > .el-icon { border-radius: 12px; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--blue) 14%, transparent); }
+.landing-method {
+  position: relative;
+  overflow: hidden;
+  border-radius: 22px;
+  background: linear-gradient(135deg, #0c211c 0%, #163a32 58%, #1d5147 100%);
+  box-shadow: 0 32px 82px rgba(10, 43, 35, .22);
+}
+.landing-method::after {
+  content: '';
+  position: absolute;
+  width: 420px;
+  height: 420px;
+  right: -150px;
+  top: -180px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(112, 211, 194, .28), transparent 66%);
+  pointer-events: none;
+}
+.landing-method .method-heading, .landing-method .method-list { position: relative; z-index: 1; }
+.method-list > div { transition: padding .2s, background .2s; }
+.method-list > div:hover { padding-inline: 10px; background: rgba(255, 255, 255, .045); }
+.landing-end {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--blue) 17%, var(--border));
+  border-radius: 18px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--blue-light) 82%, var(--bg-card)), var(--bg-card));
+  box-shadow: 0 22px 58px rgba(16, 54, 47, .08);
+}
+.landing-end::after { content: ''; position: absolute; width: 260px; height: 260px; right: -115px; bottom: -145px; border-radius: 50%; background: radial-gradient(circle, color-mix(in srgb, var(--blue) 20%, transparent), transparent 68%); pointer-events: none; }
+.landing-end > div, .landing-end > .el-button { position: relative; z-index: 1; }
+@media (max-width: 760px) {
+  .landing-hero::before { inset: 18px -18px 6px; border-radius: 24px; }
+  .landing-stage { min-height: 420px; }
+  .stage-window { transform: none; box-shadow: 0 28px 64px rgba(16, 54, 47, .16); }
+  .stage-body { min-height: 350px; }
+  .stage-dashboard { padding: 21px 16px; }
+  .landing-feature-grid article { min-height: 0; border-radius: 14px; background: var(--surface-glass); }
+  .landing-method { border-radius: 18px; }
+}
+.landing-actions > .el-button--primary { color: #fff !important; }
+.landing-actions > .el-button--primary > span { display: inline-flex; place-items: initial; width: auto; height: auto; border: 0; border-radius: 0; background: transparent; color: inherit; font: inherit; }
+
+/* ======== Final composition pass ========
+   Keep the landing page airy on desktop, but make the preview a compact,
+   readable product moment on narrow screens instead of a second full page. */
+.landing-page { max-width: 1200px; padding-inline: clamp(20px, 3vw, 30px); }
+.landing-hero {
+  min-height: min(720px, calc(100vh - 56px));
+  grid-template-columns: minmax(360px, .88fr) minmax(520px, 1.12fr);
+  gap: clamp(42px, 5vw, 72px);
+  padding: 78px 0 66px;
+}
+.landing-copy { max-width: 620px; }
+.landing-copy h1 { max-width: 600px; }
+.landing-proof {
+  gap: 0;
+  padding-top: 20px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+}
+.landing-proof > div { flex: 0 1 112px; }
+.landing-stage { min-height: 520px; }
+.stage-window { width: min(100%, 620px); }
+.landing-strip { margin-top: 2px; }
+
+@media (max-width: 1050px) {
+  .landing-hero { min-height: 0; grid-template-columns: 1fr; gap: 12px; padding-top: 58px; }
+  .landing-copy { max-width: 680px; }
+  .landing-stage { min-height: 500px; margin-top: 12px; }
+}
+
+@media (max-width: 760px) {
+  .landing-page { width: 100%; max-width: none; padding: 0 16px 52px; }
+  .landing-hero { min-height: 0; gap: 0; padding: 43px 0 22px; }
+  .landing-hero::before { inset: 18px -12px 0; border-radius: 24px; }
+  .landing-copy h1 { max-width: 100%; margin: 17px 0 17px; font-size: clamp(43px, 11.6vw, 58px); line-height: .99; }
+  .landing-copy > p { max-width: 390px; line-height: 1.75; }
+  .landing-actions { margin-top: 24px; }
+  .landing-proof { margin-top: 30px; padding-top: 17px; }
+  .landing-proof > div { flex: 1 1 0; min-width: 0; }
+  .landing-proof strong { font-size: 18px; }
+  .landing-proof span { white-space: nowrap; }
+  .landing-stage {
+    min-height: 0;
+    height: auto;
+    margin: 20px -2px 0;
+    align-items: start;
+  }
+  .stage-window { width: 100%; transform: none; box-shadow: 0 24px 56px rgba(16, 54, 47, .14); }
+  .stage-bar { height: 40px; padding-inline: 13px; }
+  .stage-bar small { font-size: 7px; }
+  .stage-body { min-height: 0; }
+  .stage-dashboard { padding: 17px 13px 15px; }
+  .stage-head strong { font-size: 16px; }
+  .stage-priority { gap: 10px; margin-top: 16px; padding: 12px 13px; }
+  .stage-priority strong { margin-top: 5px; font-size: 13px; }
+  .stage-priority p { max-width: 245px; font-size: 9px; line-height: 1.45; }
+  .stage-metrics { gap: 8px; margin-top: 10px; }
+  .stage-metrics > div { padding: 11px; }
+  .stage-metrics strong { margin: 4px 0 2px; font-size: 20px; }
+  .stage-insight { margin-top: 10px; padding: 11px; }
+  .stage-bars { height: 60px; gap: 7px; margin-top: 9px; }
+  .stage-caption { right: 50%; bottom: -2px; transform: translateX(50%); white-space: nowrap; font-size: 8px; }
+  .landing-strip { margin-top: 3px; }
+  .landing-features { padding-top: 68px; }
+}
+
+@media (max-width: 430px) {
+  .landing-copy h1 { font-size: 46px; }
+  .landing-proof strong { font-size: 17px; }
+  .stage-rail { width: 54px; }
+  .stage-body { grid-template-columns: 54px 1fr; }
+  .stage-dashboard { padding-inline: 11px; }
+  .stage-priority p { max-width: 210px; }
+}
 </style>

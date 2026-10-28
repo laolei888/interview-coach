@@ -1,9 +1,21 @@
 import axios from 'axios'
+import { ElMessage } from 'element-plus'
 
 const api = axios.create({
   baseURL: '/api',
   timeout: 120000
 })
+
+let sessionExpiredNotified = false
+
+function normalizeError(err) {
+  if (err.code === 'ECONNABORTED') return '请求超时，请稍后重试'
+  if (!err.response) return '无法连接后端服务，请确认服务已启动'
+  return err.response.data?.message || err.message || '请求失败，请稍后重试'
+}
+
+export const getErrorMessage = (err, fallback = '请求失败，请稍后重试') =>
+  err?.normalizedMessage || err?.response?.data?.message || err?.message || fallback
 
 api.interceptors.request.use(config => {
   const token = localStorage.getItem('token')
@@ -17,8 +29,18 @@ api.interceptors.response.use(
     if (err.response?.status === 401) {
       localStorage.removeItem('token')
       localStorage.removeItem('username')
-      window.location.hash = '#/login'
+      window.dispatchEvent(new CustomEvent('interview-coach:auth-expired'))
+      if (!sessionExpiredNotified) {
+        sessionExpiredNotified = true
+        ElMessage.warning('登录状态已过期，请重新登录')
+        setTimeout(() => { sessionExpiredNotified = false }, 1500)
+      }
+      const current = `${window.location.pathname}${window.location.search}`
+      const redirect = current && current !== '/login' ? `?redirect=${encodeURIComponent(current)}` : ''
+      window.history.replaceState(null, '', `/login${redirect}`)
+      window.dispatchEvent(new PopStateEvent('popstate'))
     }
+    err.normalizedMessage = normalizeError(err)
     return Promise.reject(err)
   }
 )
@@ -47,18 +69,26 @@ export const getResumeHistory = () => api.get('/resume/history')
 export const getResumeDetail = (id) => api.get(`/resume/${id}`)
 
 // ==================== AI 模拟面试 ====================
-export const startInterview = (position = 'Java后端开发') =>
-  api.get('/interview/start', { params: { position } })
+export const startInterview = (options = {}) =>
+  api.get('/interview/start', {
+    params: typeof options === 'string' ? { position: options } : options
+  })
 export const getInterviewHistory = (sessionId) =>
   api.get(`/interview/history/${sessionId}`)
-export const endInterview = (sessionId) =>
-  api.post('/interview/end', null, { params: { sessionId } })
+export const endInterview = (sessionId, metrics = {}) =>
+  api.post('/interview/end', null, { params: { sessionId, ...metrics } })
 export const getSessions = () => api.get('/interview/sessions')
 export const getSessionDetail = (id) => api.get(`/interview/session/${id}`)
 export const deleteSession = (id) => api.delete(`/interview/session/${id}`)
 
-// SSE
-export const createChatStreamUrl = (sessionId, userAnswer) =>
-  `/api/interview/chat-stream?sessionId=${sessionId}&userAnswer=${encodeURIComponent(userAnswer)}`
+// SSE：使用 POST 请求体承载回答，避免回答出现在 URL、访问日志或浏览器历史中
+export const createChatStreamRequest = (sessionId, userAnswer) => ({
+  url: '/api/interview/chat-stream',
+  options: {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sessionId, userAnswer })
+  }
+})
 
 export default api

@@ -23,6 +23,18 @@ public class InterviewSession {
     /** 面试岗位（如 Java后端、前端开发） */
     private String position;
 
+    /** 面试类型：technical/behavioral/system-design/project */
+    private String interviewMode;
+
+    /** 难度档位：junior/intermediate/senior */
+    private String difficultyLevel;
+
+    /** 建议完成轮次 */
+    private Integer targetRounds;
+
+    /** 反馈风格：encouraging/balanced/strict */
+    private String feedbackStyle;
+
     /** 状态：active-进行中, completed-已结束 */
     private String status;
 

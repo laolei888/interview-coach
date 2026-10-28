@@ -1,6 +1,7 @@
 ﻿.idea/
 target/
 node_modules/
+dist/
 uploads/
 .env
 *.log
@@ -9,3 +10,4 @@ application-local.yml
 !.env.example
 coverage/
 *.pid
+*.docx

@@ -8,9 +8,36 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   backend:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_DATABASE: interview_coach
+          MYSQL_ROOT_PASSWORD: test-password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -ptest-password"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+      redis:
+        image: redis:7.4-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=3s
+          --health-retries=10
     defaults:
       run:
         working-directory: backend
@@ -26,10 +53,13 @@ jobs:
           DEEPSEEK_API_KEY: test-key
           INTERVIEW_DB_PASSWORD: test-password
           INTERVIEW_JWT_SECRET: ci-only-secret-at-least-32-characters
+          SPRING_DATASOURCE_URL: "jdbc:mysql://127.0.0.1:3306/interview_coach?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC&createDatabaseIfNotExist=true"
+          SPRING_DATA_REDIS_HOST: "127.0.0.1"
         run: mvn -B clean test
 
   frontend:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     defaults:
       run:
         working-directory: frontend
@@ -45,6 +75,7 @@ jobs:
 
   containers:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - name: Validate Compose configuration

@@ -1,34 +1,60 @@
 # AI Interview Coach
 
-面向技术求职者的 AI 面试训练平台。项目将简历诊断、实时模拟面试、能力评估、题库练习和成长数据整合为完整训练闭环。
+面向技术求职者的 AI 求职训练平台。项目把简历诊断、岗位匹配、AI 模拟面试、逐题评分、题库练习、训练档案和复盘报告整合成一套完整闭环，适合用于毕业设计、个人作品集和 Java/Vue 全栈项目展示。
 
-## 核心能力
+## 项目亮点
 
-- PDF 简历解析与 AI 多维诊断，支持历史报告管理和 Markdown 导出。
-- 基于 SSE 的流式模拟面试，支持上下文追问、停止生成、失败重试和会话恢复。
-- 面试结束后生成技术基础、问题分析、项目实践、表达沟通、岗位匹配五维评估。
-- 公共题库与用户私有题库并存，支持 AI 出题、来源筛选、分页和 Markdown 答案。
-- 训练驾驶舱展示 7 天趋势、完成率、岗位分布、简历均分和动态训练建议。
-- 桌面侧边栏与移动端底部导航，完整适配手机访问和深色模式。
+- **岗位定向简历诊断**：PDF 简历解析、目标岗位/JD 输入、ATS 关键词覆盖、能力缺口、证据链和行动优先级分析。
+- **流式 AI 模拟面试**：基于 SSE 的实时追问，支持技术深挖、项目复盘、系统设计、行为面试，多难度、目标轮次和鼓励/平衡/严格反馈风格配置。
+- **逐题评分与复盘**：AI 回复统一输出简短点评、下一问和机器评分，结束后结合回答内容、表达时长、语速和填充词信号生成结构化面试总结。
+- **训练驾驶舱**：准备度评分、7 天训练趋势、岗位分布、场景分布、低分回答摘录和今日训练计划。
+- **面试题库系统**：公共题库、私有题目、AI 批量出题、随机练习、专注练习、掌握/待复习进度追踪。
+- **个人训练档案**：头像、资料、安全设置、训练阶段、推荐下一步行动和成就徽章。
+- **多用户数据隔离**：简历、面试、题目、头像、统计数据均按用户隔离，避免越权访问。
+- **产品化前端体验**：响应式 SaaS 工作台、移动端底部导航、深色模式、3D 视觉场景、404 页面、统一错误提示。
 
-## 工程亮点
+## 页面预览
 
-- 使用 Spring AI 对接 DeepSeek OpenAI 兼容接口，并通过统一 `AiGateway` 实现空响应检测、失败重试、场景标识和调用耗时日志。
-- 使用 Spring WebFlux `Flux` 与前端 Fetch `ReadableStream` 实现 SSE 增量输出和会话消息持久化。
-- 使用 JWT 完成身份认证，所有简历、面试、题目和统计查询均按 `userId` 隔离。
-- 使用 Flyway 管理数据库版本，新环境自动建表，已有环境通过 baseline 平滑接管。
-- 集成 Spring Boot Actuator 与 Micrometer，提供标准健康探针并支持按需开放 Prometheus 指标。
-- Redis 实现 AI 接口限流；Redis 不可用时自动降级为本地内存限流，避免核心功能完全失效。
-- 密码使用 BCrypt 存储，并支持历史 MD5 密码在登录成功后无感升级。
-- 头像资源通过鉴权接口访问，限制文件类型、大小和资源归属，并自动清理旧头像。
-- 统一异常响应、CORS 白名单、分页参数校验和接口输入长度限制。
+项目内置系统设计图，适合放在论文、答辩或 GitHub 展示中：
+
+| 用例图 | 架构图 |
+| --- | --- |
+| ![用例图](diagram/01-usecase-diagram.svg) | ![架构图](diagram/02-architecture-diagram.svg) |
+
+| 功能模块 | ER 图 |
+| --- | --- |
+| ![功能模块](diagram/03-functional-modules.svg) | ![ER 图](diagram/04-er-diagram.svg) |
 
 ## 技术栈
 
-- Backend: Java 17, Spring Boot 3.3, Spring AI, MyBatis-Plus, MySQL, Redis
-- Frontend: Vue 3, Vite, Pinia, Element Plus, Axios, marked
-- AI: DeepSeek Chat API
-- Tooling: PDFBox, JWT, Knife4j, JUnit 5, Mockito
+**后端**
+
+- Java 17 / Spring Boot 3.3
+- Spring AI / DeepSeek OpenAI-compatible API
+- MyBatis-Plus / MySQL 8 / Flyway
+- Redis / JWT / BCrypt
+- Spring Boot Actuator / Micrometer / Knife4j
+- PDFBox / JUnit 5 / Mockito
+
+**前端**
+
+- Vue 3 / Vite
+- Pinia / Vue Router
+- Element Plus / Element Plus Icons
+- Axios / Fetch ReadableStream
+- marked / Three.js
+
+## 工程能力
+
+- **AI 网关封装**：统一处理大模型调用、空响应检测、失败重试、耗时日志和场景标识。
+- **SSE 流式输出**：前端使用 `fetch` + `ReadableStream` 消费增量文本，回答通过 JSON POST 请求体传输，后端持久化完整问答；同时保留 GET 兼容入口。
+- **数据库版本管理**：Flyway 管理 V1-V6 迁移，新环境自动建表，旧环境支持 baseline 接管。
+- **认证与会话控制**：JWT 登录态、token version、修改密码后撤销旧会话。
+- **密码安全**：BCrypt 存储密码，兼容旧 MD5 并在登录成功后自动升级。
+- **限流与降级**：Redis 限制 AI 调用频率，Redis 不可用时自动降级为本地内存限流。
+- **资源安全**：头像上传限制类型和大小，通过鉴权接口读取，用户不能访问他人头像。
+- **可观测性**：健康检查、Actuator、请求 ID 日志、Prometheus 指标按需开放。
+- **前端工程体验**：路由标题、404 页面、统一错误归一化、移动端适配、按路由拆包。
 
 ## 项目结构
 
@@ -36,39 +62,63 @@
 interview-coach/
 |-- backend/                 Spring Boot API
 |   |-- src/main/java/com/interviewcoach/
-|   |   |-- config/         AI、CORS、MVC、MyBatis 配置
-|   |   |-- controller/     REST 与 SSE 接口
-|   |   |-- service/        业务、数据隔离、AI 网关
-|   |   |-- interceptor/    JWT 登录拦截
-|   |   `-- exception/      全局异常处理
-|   `-- src/test/           服务与限流测试
-|-- frontend/               Vue 3 单页应用
+|   |   |-- config/          AI、CORS、MVC、MyBatis 配置
+|   |   |-- controller/      REST、SSE、健康检查接口
+|   |   |-- service/         业务服务、AI 网关、数据隔离
+|   |   |-- interceptor/     JWT 登录拦截
+|   |   |-- exception/       全局异常处理
+|   |   `-- utils/           JWT、限流等工具
+|   `-- src/main/resources/
+|       `-- db/migration/    Flyway 数据库迁移
+|-- frontend/                Vue 3 单页应用
 |   `-- src/
-|       |-- views/          工作台与业务页面
-|       |-- stores/         用户和主题状态
-|       |-- api/            Axios 与 SSE 请求
-|       `-- utils/          Markdown 渲染
-`-- docs/                   初始化与迁移脚本
+|       |-- views/           首页、简历、面试、题库、历史、个人中心
+|       |-- stores/          用户与主题状态
+|       |-- api/             Axios、SSE URL、错误处理
+|       |-- components/      Three.js 视觉组件
+|       `-- utils/           Markdown 渲染
+|-- diagram/                 架构图、ER 图、流程图
+|-- docs/                    初始化脚本和历史迁移脚本
+|-- docker-compose.yml       本地容器化编排
+`-- .env.example             环境变量模板
 ```
 
 ## 本地运行
 
-环境要求：JDK 17+、Maven 3.9+、Node.js 18+、MySQL 8、Redis 6+。
+环境要求：
 
-配置环境变量：
+- JDK 17+
+- Maven 3.9+
+- Node.js 18+
+- MySQL 8
+- Redis 6+
+
+复制环境变量模板：
 
 ```powershell
-$env:DEEPSEEK_API_KEY="your-api-key"
-$env:INTERVIEW_DB_PASSWORD="your-mysql-password"
-$env:INTERVIEW_JWT_SECRET="a-long-random-secret"
+Copy-Item .env.example .env
 ```
 
-数据库由 Flyway 在后端启动时自动初始化和迁移。已有旧版本数据库首次接入时会创建 baseline，不会重复执行初始建表脚本。
+至少需要配置：
 
-需要手动导入演示数据时仍可使用：
+```env
+DEEPSEEK_API_KEY=replace-with-your-deepseek-key
+INTERVIEW_DB_PASSWORD=replace-with-a-strong-database-password
+INTERVIEW_JWT_SECRET=replace-with-at-least-32-random-characters
+```
+
+> 不要把真实 `.env`、API Key、数据库密码提交到 GitHub。
+
+可以先运行环境自检脚本，快速确认本机工具、端口和关键环境变量：
 
 ```powershell
-mysql -u root -p < docs/init.sql
+.\scripts\check-env.ps1
+```
+
+严格模式会在必填环境变量缺失时返回非 0 退出码：
+
+```powershell
+.\scripts\check-env.ps1 -Strict
 ```
 
 启动后端：
@@ -86,22 +136,23 @@ npm install
 npm run dev -- --host 0.0.0.0
 ```
 
+默认地址：
+
 - Web: `http://localhost:5173`
 - API: `http://localhost:8080`
 - API Docs: `http://localhost:8080/doc.html`
+- Health: `http://localhost:8080/api/health`
+
+手机访问时，确保手机和电脑在同一局域网，然后使用 Vite 输出的 `Network` 地址，例如 `http://192.168.x.x:5173`。
 
 ## Docker 一键启动
-
-复制环境变量模板并填写真实配置：
 
 ```powershell
 Copy-Item .env.example .env
 docker compose up --build -d
 ```
 
-启动后访问 `http://localhost:5173`。Compose 会创建 MySQL、Redis、后端和 Nginx 前端四个服务，并使用命名卷保存数据库、头像和 Redis 数据。
-
-查看状态与日志：
+查看服务：
 
 ```powershell
 docker compose ps
@@ -114,28 +165,52 @@ docker compose logs -f backend
 docker compose down
 ```
 
-`docs/init.sql` 仅用于全新数据库初始化，其中包含建表重置语句。已有数据的环境请执行 `docs/20260914_user_data_isolation.sql` 等迁移脚本，不要重复执行初始化脚本。
+Compose 会启动 MySQL、Redis、后端和前端服务，并使用命名卷保存数据库、头像和 Redis 数据。
 
-标准运维端点：
+## 数据库迁移
 
-- `GET /actuator/health`：应用健康与容器探针
-- `GET /actuator/info`：应用版本信息
+后端启动时会由 Flyway 自动执行迁移：
 
-默认不公开指标详情。需要接入 Prometheus 时，将 `INTERVIEW_ACTUATOR_ENDPOINTS` 设置为 `health,info,prometheus,metrics`。
+- `V1__initial_schema.sql`：初始表结构
+- `V2__add_operational_indexes.sql`：运行索引
+- `V3__add_resume_target_context.sql`：简历岗位上下文
+- `V4__add_question_practice_progress.sql`：题库练习进度
+- `V5__add_user_token_version.sql`：会话版本
+- `V6__add_interview_training_profile.sql`：面试训练画像字段
+- `V7__add_interview_feedback_style.sql`：面试反馈风格
+
+`docs/init.sql` 仅用于全新数据库初始化演示。已有数据环境不要重复执行初始化脚本。
 
 ## 测试与构建
 
+后端测试：
+
 ```powershell
 cd backend
-mvn clean test
+mvn test
+```
 
-cd ../frontend
+前端构建：
+
+```powershell
+cd frontend
 npm run build
 ```
 
-## 简历项目描述参考
+## 环境变量
 
-AI Interview Coach 是一个基于 Spring Boot 3 与 Vue 3 的智能面试训练平台。项目通过 Spring AI 接入 DeepSeek，使用 SSE 实现上下文感知的流式模拟面试，并将会话持久化后生成五维能力评估；设计统一 AI 网关处理重试、空响应和调用观测，使用 Redis 限流及本地降级保障可用性；通过 JWT 与查询级用户条件实现简历、会话、题库等数据的多用户隔离，并完成响应式训练驾驶舱和移动端适配。
+| 变量 | 说明 | 示例 |
+| --- | --- | --- |
+| `DEEPSEEK_API_KEY` | DeepSeek API Key | `sk-...` |
+| `INTERVIEW_DB_PASSWORD` | MySQL 密码 | `your-password` |
+| `INTERVIEW_JWT_SECRET` | JWT 签名密钥，建议 32 位以上 | `a-long-random-secret` |
+| `INTERVIEW_AI_TIMEOUT_SECONDS` | AI 调用超时时间 | `45` |
+| `INTERVIEW_CORS_ORIGINS` | 允许跨域来源 | `http://localhost:5173` |
+| `INTERVIEW_ACTUATOR_ENDPOINTS` | 开放的 Actuator 端点 | `health,info` |
+
+## 可写进简历的项目描述
+
+AI Interview Coach 是一个基于 Spring Boot 3 与 Vue 3 的智能求职训练平台，覆盖简历诊断、AI 模拟面试、题库练习和训练复盘闭环。项目通过 Spring AI 接入 DeepSeek，设计统一 AI 网关处理重试、空响应和调用观测；使用 SSE 实现上下文感知的流式模拟面试，并将对话持久化后生成逐题评分和结构化能力评估；基于 JWT、token version 和查询级 `userId` 条件实现多用户数据隔离；使用 Flyway 管理数据库迁移、Redis 限流及本地降级保障可用性；前端采用 Vue 3、Pinia、Element Plus 和 Three.js 构建响应式训练工作台，支持移动端、深色模式、3D 可视化和完整复盘体验。
 
 ## 开源协作
 

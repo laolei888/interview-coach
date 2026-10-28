@@ -1,6 +1,7 @@
 package com.interviewcoach.controller;
 
 import com.interviewcoach.dto.Result;
+import com.interviewcoach.dto.InterviewChatRequest;
 import com.interviewcoach.entity.InterviewSession;
 import com.interviewcoach.service.InterviewService;
 import lombok.RequiredArgsConstructor;
@@ -40,6 +41,10 @@ public class InterviewController {
      */
     @GetMapping("/start")
     public Result<Map<String, Object>> startInterview(@RequestParam(defaultValue = "Java后端开发") String position,
+                                                       @RequestParam(defaultValue = "technical") String interviewMode,
+                                                       @RequestParam(defaultValue = "intermediate") String difficultyLevel,
+                                                       @RequestParam(defaultValue = "5") Integer targetRounds,
+                                                       @RequestParam(defaultValue = "balanced") String feedbackStyle,
                                                        HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("userId");
         if (position == null || position.isBlank() || position.length() > MAX_POSITION_LENGTH) {
@@ -49,10 +54,10 @@ public class InterviewController {
             return Result.fail(429, "操作太频繁，请 1 分钟后再试");
         }
         // 生成第一个问题
-        String firstQuestion = interviewService.generateFirstQuestion(position);
+        String firstQuestion = interviewService.generateFirstQuestion(position, interviewMode, difficultyLevel, feedbackStyle);
 
         // AI 成功后再创建会话，避免失败时留下无效记录
-        InterviewSession session = interviewService.createSession(userId, position);
+        InterviewSession session = interviewService.createSession(userId, position, interviewMode, difficultyLevel, targetRounds, feedbackStyle);
 
         // 保存 AI 的第一条消息
         interviewService.saveMessage(session.getId(), userId, "ai", firstQuestion, null);
@@ -62,6 +67,10 @@ public class InterviewController {
         return Result.ok(Map.of(
                 "sessionId", session.getId(),
                 "position", position,
+                "interviewMode", session.getInterviewMode(),
+                "difficultyLevel", session.getDifficultyLevel(),
+                "targetRounds", session.getTargetRounds(),
+                "feedbackStyle", session.getFeedbackStyle(),
                 "firstQuestion", firstQuestion
         ));
     }
@@ -72,7 +81,8 @@ public class InterviewController {
      * 前端用 EventSource 或 fetch + ReadableStream 接收
      * 后端用 Spring WebFlux Flux 逐字推送
      * <p>
-     * GET /api/interview/chat-stream?sessionId=1&userAnswer=我觉得...
+     * POST /api/interview/chat-stream
+     * {"sessionId":1,"userAnswer":"我觉得..."}
      * <p>
      * 返回格式：text/event-stream
      */
@@ -80,7 +90,27 @@ public class InterviewController {
     public Flux<String> chatStream(@RequestParam Long sessionId,
                                     @RequestParam String userAnswer,
                                     HttpServletRequest request) {
+        return streamChat(sessionId, userAnswer, request);
+    }
+
+    /**
+     * 推荐的流式追问入口：回答通过 JSON 请求体传输，避免出现在 URL 中。
+     */
+    @PostMapping(value = "/chat-stream", consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<String> chatStream(@RequestBody InterviewChatRequest body,
+                                   HttpServletRequest request) {
+        if (body == null) {
+            return sseError("请求内容不能为空");
+        }
+        return streamChat(body.sessionId(), body.userAnswer(), request);
+    }
+
+    private Flux<String> streamChat(Long sessionId, String userAnswer, HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("userId");
+        if (sessionId == null) {
+            return sseError("面试会话不能为空");
+        }
         if (userAnswer == null || userAnswer.isBlank() || userAnswer.length() > MAX_ANSWER_LENGTH) {
             return sseError("回答不能为空且不能超过 4000 个字符");
         }
@@ -109,6 +139,9 @@ public class InterviewController {
      */
     @PostMapping("/end")
     public Result<Map<String, Object>> endInterview(@RequestParam Long sessionId,
+                                                    @RequestParam(defaultValue = "0") Integer averageSpeakingRate,
+                                                    @RequestParam(defaultValue = "0") Integer fillerWordCount,
+                                                    @RequestParam(defaultValue = "0") Integer averageAnswerSeconds,
                                                     HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("userId");
         InterviewSession current = interviewService.getSession(sessionId, userId);
@@ -118,12 +151,13 @@ public class InterviewController {
         if (!"active".equals(current.getStatus())) {
             return Result.fail(409, "该面试已经结束，不能重复生成报告");
         }
-        if (!interviewService.endSession(sessionId, userId)) {
-            return Result.fail(404, "面试会话不存在或无权限访问");
-        }
+        // 先生成总结，再关闭会话。AI 服务失败时保留 active 状态，用户可以重试，
+        // 避免出现“面试已结束但没有报告”的不可恢复状态。
+        String summary = interviewService.generateSummary(sessionId, userId, averageSpeakingRate, fillerWordCount, averageAnswerSeconds);
 
-        // 生成总结报告
-        String summary = interviewService.generateSummary(sessionId, userId);
+        if (!interviewService.endSession(sessionId, userId)) {
+            return Result.fail(409, "面试状态已发生变化，请刷新后重试");
+        }
 
         // 保存总结
         interviewService.saveMessage(sessionId, userId, "ai", "【面试总结】\n" + summary, null);
